@@ -8,14 +8,21 @@ import {
   BarChart3,
   CheckCircle2,
   Dumbbell,
+  Flame,
   HeartPulse,
   Lock,
   Ruler,
+  ShieldCheck,
+  Sparkles,
   TrendingUp,
 } from "lucide-react";
-import { AttributeKey, ProgressSubTab } from "@/types/mob";
+import { AttributeKey, MobEmotionId, ProgressSubTab } from "@/types/mob";
 import { useMob } from "@/context/MobContext";
 import { ACHIEVEMENTS_CATALOG, ATTRIBUTE_META } from "@/lib/templates";
+import {
+  MOB_EMOTION_META,
+  resolveDominantEmotion,
+} from "@/lib/mob-meter-domain";
 import { soundEngine } from "@/lib/sound";
 import { GymStrengthSection } from "@/components/GymStrengthSection";
 import { BodyMeasurementsSection } from "@/components/BodyMeasurementsSection";
@@ -32,8 +39,28 @@ const PROGRESS_TABS: Array<{
   { id: "stats", label: "Tablas e Historial", icon: BarChart3 },
 ];
 
+const EMOTION_LABELS: Record<MobEmotionId, string> = {
+  determinacion: "Determinación",
+  coraje: "Coraje",
+  vinculo: "Vínculo",
+  claridad: "Claridad",
+};
+
+function formatMomentHumanDate(isoString: string): string {
+  const parsed = new Date(isoString);
+  if (Number.isNaN(parsed.getTime())) {
+    return isoString;
+  }
+  return new Intl.DateTimeFormat("es-ES", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(parsed);
+}
+
 export function ProgressHudView() {
-  const { state, requestedProgressTab, setRequestedProgressTab } = useMob();
+  const { state, shieldActive, requestedProgressTab, setRequestedProgressTab } =
+    useMob();
   const baseId = useId();
   const tabRefs = useRef<Partial<Record<ProgressSubTab, HTMLButtonElement | null>>>({});
 
@@ -93,6 +120,12 @@ export function ProgressHudView() {
   );
 
   const activeTabDomId = `${baseId}-tab-${activeTab}`;
+  const dominantEmotion = resolveDominantEmotion(state.mobCycleSources);
+  const dominantMeta = MOB_EMOTION_META[dominantEmotion];
+  const distanceToHundred = Math.max(1, 100 - state.mobCharge);
+  const chronologicalMoments = [...state.mobHundredMoments].sort((a, b) =>
+    b.unlockedAt.localeCompare(a.unlockedAt)
+  );
 
   return (
     <div className="space-y-5">
@@ -151,6 +184,116 @@ export function ProgressHudView() {
         <div className="pt-1">
           {activeTab === "hud" && (
             <div className="space-y-6">
+              {/* Ciclo MOB 0% -> 100% y Bitácora de Momentos 100% */}
+              <section
+                aria-label="Ciclo MOB 0% a 100% y Bitácora de Momentos 100%"
+                className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5 space-y-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-action)] flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span>Ciclo MOB 0% → 100%</span>
+                    </span>
+                    <div className="flex flex-wrap items-baseline gap-2.5 mt-1">
+                      <h2
+                        className="text-3xl sm:text-4xl font-bold tabular-nums text-[var(--text-primary)]"
+                        style={{ fontFamily: "var(--font-display), sans-serif" }}
+                      >
+                        MOB {state.mobCharge}%
+                      </h2>
+                      <span className="text-xs font-medium tabular-nums text-[var(--text-secondary)]">
+                        Faltan {distanceToHundred}% para tu próximo 100%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-canvas)] text-xs font-semibold text-[var(--text-primary)]">
+                      <Sparkles
+                        className="w-3.5 h-3.5 text-[var(--accent-action)] shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>Lidera: {dominantMeta.title}</span>
+                    </span>
+
+                    {shieldActive && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--accent-sage)]/35 bg-[var(--accent-sage-soft)] text-xs font-semibold text-[var(--accent-sage)]">
+                        <ShieldCheck className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                        <span>Escudo de Inercia 24h activo</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tactile Progress Bar */}
+                <div>
+                  <div className="h-3 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-[var(--accent-action)]"
+                      initial={false}
+                      animate={{ width: `${state.mobCharge}%` }}
+                      transition={{ type: "spring", stiffness: 280, damping: 28 }}
+                    />
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-secondary)]">
+                    <span>{dominantMeta.subtitle}</span>
+                    <span className="tabular-nums font-medium text-[var(--text-tertiary)] shrink-0">
+                      {(Object.keys(EMOTION_LABELS) as MobEmotionId[])
+                        .map(
+                          (em) =>
+                            `${EMOTION_LABELS[em]} +${state.mobCycleSources[em] || 0}%`
+                        )
+                        .join(" · ")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Chronological Bitácora de Momentos 100% */}
+                <div className="pt-3.5 border-t border-[var(--border-subtle)] space-y-2.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Bitácora de Momentos 100% ({chronologicalMoments.length})
+                    </h3>
+                    <span className="text-[11px] text-[var(--text-tertiary)]">
+                      Historial de descargas al 100%
+                    </span>
+                  </div>
+
+                  {chronologicalMoments.length === 0 ? (
+                    <p className="text-xs text-[var(--text-secondary)] rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-canvas)] px-3.5 py-3">
+                      Aún no has detonado tu primer 100%. Cada medalla, misión o serie de fuerza acerca el medidor.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {chronologicalMoments.map((moment) => (
+                        <div
+                          key={moment.id}
+                          className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-canvas)] px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-bold text-[var(--text-primary)]">
+                                {moment.title}
+                              </span>
+                              <span className="text-[11px] font-medium text-[var(--text-tertiary)] capitalize tabular-nums">
+                                {formatMomentHumanDate(moment.unlockedAt)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-[var(--text-secondary)] mt-0.5 truncate">
+                              Detonante: {moment.triggerAction}
+                            </p>
+                          </div>
+                          <span className="self-start sm:self-center shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[var(--accent-action-soft)] text-[var(--accent-action)]">
+                            100% MOB
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+
               {/* GTA-inspired 100% Completion & Momentum Overview */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <section className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5">

@@ -4,12 +4,15 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
+  CheckCircle2,
   Clock,
   Dumbbell,
   Flag,
+  MoonStar,
   Play,
   Plus,
   RotateCcw,
+  ShieldCheck,
   Sparkles,
   Users,
   X,
@@ -22,8 +25,10 @@ import {
   formatHumanDate,
   TIME_OF_DAY_META,
 } from "@/lib/templates";
+import { soundEngine } from "@/lib/sound";
 import { HabitIcon } from "@/components/ui/HabitIcon";
 import { AntiProcrastinationModal } from "@/components/AntiProcrastinationModal";
+import { DayDebriefModal } from "@/components/DayDebriefModal";
 
 const TIME_ORDER: TimeOfDay[] = ["morning", "afternoon", "evening", "anytime"];
 
@@ -45,6 +50,7 @@ export function TodayView({
     state,
     todayKey,
     todayFlashEvent,
+    shieldActive,
     logHabitTier,
     clearHabitLog,
     addTask,
@@ -63,6 +69,9 @@ export function TodayView({
   const [procrastinatingTask, setProcrastinatingTask] = useState<TaskItem | null>(
     null
   );
+  const [debriefOpen, setDebriefOpen] = useState(false);
+
+  const alreadyClosedToday = state.closedDayDates.includes(todayKey);
 
   const todayTasks = state.tasks.filter((t) => t.scheduledDate === todayKey);
   const mainMissions = todayTasks.filter((t) => t.isMainMission);
@@ -106,19 +115,42 @@ export function TodayView({
           </h1>
         </div>
 
-        {/* Compact Progress Pill (especially key on mobile/tablet where right HUD is hidden) */}
-        <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2">
-          <div className="text-right">
-            <div className="text-[11px] text-[var(--text-secondary)]">Avance hoy</div>
-            <div className="text-sm font-bold tabular-nums">
-              {completedCount}/{totalCount} · {completionPct}%
+        {/* Compact Progress + Consistency Pill (1-second mobile scan without header clutter) */}
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-3.5 py-2">
+          <div className="flex items-center gap-2.5">
+            <div className="text-right">
+              <div className="text-[11px] text-[var(--text-secondary)]">
+                Avance hoy {completionPct}%
+              </div>
+              <div className="text-xs font-bold tabular-nums text-[var(--text-primary)]">
+                {completedCount}/{totalCount} acciones
+              </div>
+            </div>
+            <div className="w-9 h-2 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-[var(--accent-action)]"
+                animate={{ width: `${completionPct}%` }}
+              />
             </div>
           </div>
-          <div className="w-10 h-2 rounded-full bg-[var(--bg-muted)] overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-[var(--accent-action)]"
-              animate={{ width: `${completionPct}%` }}
-            />
+
+          <div className="h-7 w-px bg-[var(--border-subtle)]" aria-hidden="true" />
+
+          <div className="flex items-center gap-1.5 tabular-nums">
+            <div>
+              <div className="text-[11px] text-[var(--text-secondary)]">
+                Consistencia
+              </div>
+              <div className="text-xs font-bold text-[var(--accent-sage)] flex items-center gap-1">
+                <span>Inercia {state.momentum}%</span>
+                {shieldActive && (
+                  <ShieldCheck
+                    className="w-3.5 h-3.5 text-[var(--accent-sage)] shrink-0"
+                    aria-label="Escudo de Inercia activo"
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -394,9 +426,68 @@ export function TodayView({
         })}
       </div>
 
+      {/* End-of-Day Tactile Debrief Card */}
+      <section
+        aria-label="Cierre del Día"
+        className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+          alreadyClosedToday
+            ? "border-[var(--accent-sage)]/45 bg-[var(--accent-sage-soft)]/30"
+            : "border-[var(--border-subtle)] bg-[var(--bg-card)]"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+              alreadyClosedToday
+                ? "bg-[var(--accent-sage)] text-white"
+                : "bg-[var(--bg-muted)] text-[var(--text-secondary)]"
+            }`}
+          >
+            {alreadyClosedToday ? (
+              <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+            ) : (
+              <MoonStar className="w-4 h-4" aria-hidden="true" />
+            )}
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">
+              Cierre del Día · Pantalla de resultados y foco de mañana
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              {alreadyClosedToday
+                ? "Tu jornada de hoy ya quedó consolidada. Puedes revisar tu balance o sumar una prioridad para mañana."
+                : "Revisa tus medallas de hoy, suma +4% a tu medidor MOB y deja lista tu Misión Principal #1 de mañana."}
+            </p>
+          </div>
+        </div>
+
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={() => {
+            soundEngine.playTap();
+            setDebriefOpen(true);
+          }}
+          className={`self-end sm:self-center shrink-0 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer ${
+            alreadyClosedToday
+              ? "border border-[var(--accent-sage)]/45 bg-[var(--accent-sage-soft)] text-[var(--accent-sage)] hover:opacity-95"
+              : "bg-[var(--accent-action)] text-white hover:opacity-95"
+          }`}
+        >
+          {alreadyClosedToday
+            ? "Día cerrado ✓ · Ver resumen"
+            : "Cerrar el Día (+4% MOB)"}
+        </motion.button>
+      </section>
+
       <AntiProcrastinationModal
         task={procrastinatingTask}
         onClose={() => setProcrastinatingTask(null)}
+      />
+
+      <DayDebriefModal
+        open={debriefOpen}
+        onClose={() => setDebriefOpen(false)}
       />
     </div>
   );
