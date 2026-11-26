@@ -145,8 +145,8 @@ export function SettingsDialog({
               <div className="text-sm font-medium text-[var(--text-primary)]">
                 Sonidos táctiles y medallas
               </div>
-              <div className="text-xs text-[var(--text-secondary)]">
-                Micro-tonos suaves al marcar avances
+              <div className="text-xs text-[var(--text-secondary)] leading-snug mt-0.5">
+                Efectos cortos (clics, medallas, campana y secuencia 100%) · No corta tu música externa
               </div>
             </div>
           </div>
