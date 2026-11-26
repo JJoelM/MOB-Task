@@ -212,3 +212,234 @@ dialog::backdrop {
   outline: 2px solid var(--accent-action);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+ * Accessible Single-Row Scrollable Tablist (per modern-web-guidance: tabs)
+ * ========================================================================== */
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.mob-tablist {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+  border-block-end: 1px solid var(--border-subtle);
+}
+
+.mob-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .mob-tablist {
+    --fade-size: 2.25rem;
+    --fade-dir: right;
+    --fade-start-pos: 0;
+    --fade-end-pos: 100%;
+    scroll-padding-inline: var(--fade-size);
+    mask:
+      linear-gradient(black, black) no-clip subtract,
+      linear-gradient(to var(--fade-dir), black, transparent) var(--fade-start-pos) 0 / var(--fade-start) 100% no-repeat no-clip,
+      linear-gradient(to var(--fade-dir), transparent, black) var(--fade-end-pos) 0 / var(--fade-end) 100% no-repeat no-clip;
+    animation: mob-reveal-fade-start linear both, mob-hide-fade-end linear both;
+    animation-timeline: scroll(self inline);
+    animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
+  }
+
+  .mob-tablist:dir(rtl) {
+    --fade-dir: left;
+    --fade-start-pos: 100%;
+    --fade-end-pos: 0;
+  }
+}
+
+@keyframes mob-reveal-fade-start {
+  to {
+    --fade-start: var(--fade-size);
+  }
+}
+
+@keyframes mob-hide-fade-end {
+  from {
+    --fade-end: var(--fade-size);
+  }
+}
+
+.mob-tablist [role="tab"] {
+  flex: none;
+  position: relative;
+  scroll-snap-align: start;
+  color: var(--text-secondary);
+  transition: color 150ms ease;
+}
+
+.mob-tablist [role="tab"]:hover {
+  color: var(--text-primary);
+}
+
+.mob-tablist [role="tab"][aria-selected="true"] {
+  color: var(--accent-action);
+}
+
+.mob-tablist [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  border-block-end: 3px solid var(--accent-action);
+}
+
+/* ==========================================================================
+ * Responsive Container-Query Evolution Table (per modern-web-guidance)
+ * ========================================================================== */
+.mob-table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: min(460px, 72dvh);
+  container-type: inline-size;
+}
+
+table.mob-evo-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  inline-size: 100%;
+  font-size: 0.8125rem;
+}
+
+table.mob-evo-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+}
+
+table.mob-evo-table thead th {
+  background-color: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: start;
+  padding-block: 0.6875rem;
+  padding-inline: 0.875rem;
+  border-block-end: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+table.mob-evo-table tbody th {
+  position: sticky;
+  inset-inline-start: 0;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: start;
+  padding-block: 0.75rem;
+  padding-inline: 0.875rem;
+  border-block-end: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+table.mob-evo-table tbody td {
+  padding-block: 0.75rem;
+  padding-inline: 0.875rem;
+  border-block-end: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  white-space: nowrap;
+}
+
+table.mob-evo-table tbody tr:last-child th,
+table.mob-evo-table tbody tr:last-child td {
+  border-block-end: none;
+}
+
+table.mob-evo-table tbody tr:hover th,
+table.mob-evo-table tbody tr:hover td {
+  background-color: var(--bg-canvas);
+}
+
+@container (width < 560px) {
+  table.mob-evo-table,
+  table.mob-evo-table thead,
+  table.mob-evo-table tbody,
+  table.mob-evo-table tr,
+  table.mob-evo-table th,
+  table.mob-evo-table td {
+    display: block;
+  }
+
+  table.mob-evo-table thead {
+    display: none;
+  }
+
+  table.mob-evo-table tbody {
+    padding: 0.625rem;
+  }
+
+  table.mob-evo-table tbody tr {
+    margin-block-end: 0.625rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.875rem;
+    background-color: var(--bg-card);
+  }
+
+  table.mob-evo-table tbody tr:last-child {
+    margin-block-end: 0;
+  }
+
+  table.mob-evo-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    inset-inline-start: auto;
+    z-index: 2;
+    background-color: var(--bg-muted);
+    border-start-start-radius: 0.825rem;
+    border-start-end-radius: 0.825rem;
+    padding-block: 0.55rem;
+    padding-inline: 0.8rem;
+    white-space: normal;
+  }
+
+  table.mob-evo-table tbody td {
+    padding-block: 0.5rem;
+    padding-inline: 0.8rem;
+    white-space: normal;
+  }
+
+  table.mob-evo-table tbody td:last-child {
+    border-end-start-radius: 0.825rem;
+    border-end-end-radius: 0.825rem;
+  }
+
+  table.mob-evo-table tbody td:nth-child(2)::before {
+    content: var(--col-2) ": ";
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  table.mob-evo-table tbody td:nth-child(3)::before {
+    content: var(--col-3) ": ";
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  table.mob-evo-table tbody td:nth-child(4)::before {
+    content: var(--col-4) ": ";
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  table.mob-evo-table tbody td:nth-child(5)::before {
+    content: var(--col-5) ": ";
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}

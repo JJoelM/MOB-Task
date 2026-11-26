@@ -4,6 +4,8 @@ import {
   MorphologicalProfileId,
 } from "@/types/mob";
 
+export { buildEvolutionCsv } from "@/lib/csv-export";
+
 const DAY_MS = 86_400_000;
 
 export function calculateUsNavyBodyFat(params: {
