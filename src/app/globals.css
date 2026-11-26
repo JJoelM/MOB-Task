@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  /* Raw Light Tokens — Papel Piedra Cálido (Dieter Rams / Things 3) */
+  --bg-canvas-light: #f6f5f0;
+  --bg-card-light: #ffffff;
+  --bg-muted-light: #efede6;
+  --bg-subtle-light: #e7e4da;
+  --border-subtle-light: #e2dfd5;
+  --border-strong-light: #cbc7ba;
+  --text-primary-light: #191917;
+  --text-secondary-light: #5c5a53;
+  --text-tertiary-light: #87847a;
+
+  /* Raw Dark Tokens — Carbón Cálido Mate */
+  --bg-canvas-dark: #141413;
+  --bg-card-dark: #1d1d1b;
+  --bg-muted-dark: #252522;
+  --bg-subtle-dark: #2e2e2a;
+  --border-subtle-dark: #2e2e2a;
+  --border-strong-dark: #43423d;
+  --text-primary-dark: #f2f0e8;
+  --text-secondary-dark: #a6a39a;
+  --text-tertiary-dark: #75726a;
+
+  /* Semantic Accents */
+  --accent-action-light: #d95d39;
+  --accent-action-dark: #e56d4a;
+  --accent-action-soft-light: #fbeae4;
+  --accent-action-soft-dark: #362019;
+
+  --accent-sage-light: #2b7a57;
+  --accent-sage-dark: #48a87e;
+  --accent-sage-soft-light: #e4f2eb;
+  --accent-sage-soft-dark: #192e24;
+
+  --accent-focus-light: #34638a;
+  --accent-focus-dark: #6399c7;
+  --accent-focus-soft-light: #e6eff6;
+  --accent-focus-soft-dark: #192633;
+
+  /* Matte Medals */
+  --medal-bronze-light: #a86442;
+  --medal-bronze-dark: #d28864;
+  --medal-silver-light: #64707a;
+  --medal-silver-dark: #9aa7b2;
+  --medal-gold-light: #bd8319;
+  --medal-gold-dark: #e2ab40;
+
+  /* Base Fallback Assignment (Light Default) */
+  --bg-canvas: var(--bg-canvas-light);
+  --bg-card: var(--bg-card-light);
+  --bg-muted: var(--bg-muted-light);
+  --bg-subtle: var(--bg-subtle-light);
+  --border-subtle: var(--border-subtle-light);
+  --border-strong: var(--border-strong-light);
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  --text-tertiary: var(--text-tertiary-light);
+  --accent-action: var(--accent-action-light);
+  --accent-action-soft: var(--accent-action-soft-light);
+  --accent-sage: var(--accent-sage-light);
+  --accent-sage-soft: var(--accent-sage-soft-light);
+  --accent-focus: var(--accent-focus-light);
+  --accent-focus-soft: var(--accent-focus-soft-light);
+  --medal-bronze: var(--medal-bronze-light);
+  --medal-silver: var(--medal-silver-light);
+  --medal-gold: var(--medal-gold-light);
+  --scrollbar-track: #ece9e0;
+  --scrollbar-thumb: #9e9a8e;
+
+  /* Fallback for browsers without light-dark() */
+  @media (prefers-color-scheme: dark) {
+    --bg-canvas: var(--bg-canvas-dark);
+    --bg-card: var(--bg-card-dark);
+    --bg-muted: var(--bg-muted-dark);
+    --bg-subtle: var(--bg-subtle-dark);
+    --border-subtle: var(--border-subtle-dark);
+    --border-strong: var(--border-strong-dark);
+    --text-primary: var(--text-primary-dark);
+    --text-secondary: var(--text-secondary-dark);
+    --text-tertiary: var(--text-tertiary-dark);
+    --accent-action: var(--accent-action-dark);
+    --accent-action-soft: var(--accent-action-soft-dark);
+    --accent-sage: var(--accent-sage-dark);
+    --accent-sage-soft: var(--accent-sage-soft-dark);
+    --accent-focus: var(--accent-focus-dark);
+    --accent-focus-soft: var(--accent-focus-soft-dark);
+    --medal-bronze: var(--medal-bronze-dark);
+    --medal-silver: var(--medal-silver-dark);
+    --medal-gold: var(--medal-gold-dark);
+    --scrollbar-track: #1b1b19;
+    --scrollbar-thumb: #69665e;
+  }
+
+  /* Modern CSS light-dark() driven by color-scheme */
+  @supports (color: light-dark(white, black)) {
+    --bg-canvas: light-dark(var(--bg-canvas-light), var(--bg-canvas-dark));
+    --bg-card: light-dark(var(--bg-card-light), var(--bg-card-dark));
+    --bg-muted: light-dark(var(--bg-muted-light), var(--bg-muted-dark));
+    --bg-subtle: light-dark(var(--bg-subtle-light), var(--bg-subtle-dark));
+    --border-subtle: light-dark(var(--border-subtle-light), var(--border-subtle-dark));
+    --border-strong: light-dark(var(--border-strong-light), var(--border-strong-dark));
+    --text-primary: light-dark(var(--text-primary-light), var(--text-primary-dark));
+    --text-secondary: light-dark(var(--text-secondary-light), var(--text-secondary-dark));
+    --text-tertiary: light-dark(var(--text-tertiary-light), var(--text-tertiary-dark));
+    --accent-action: light-dark(var(--accent-action-light), var(--accent-action-dark));
+    --accent-action-soft: light-dark(var(--accent-action-soft-light), var(--accent-action-soft-dark));
+    --accent-sage: light-dark(var(--accent-sage-light), var(--accent-sage-dark));
+    --accent-sage-soft: light-dark(var(--accent-sage-soft-light), var(--accent-sage-soft-dark));
+    --accent-focus: light-dark(var(--accent-focus-light), var(--accent-focus-dark));
+    --accent-focus-soft: light-dark(var(--accent-focus-soft-light), var(--accent-focus-soft-dark));
+    --medal-bronze: light-dark(var(--medal-bronze-light), var(--medal-bronze-dark));
+    --medal-silver: light-dark(var(--medal-silver-light), var(--medal-silver-dark));
+    --medal-gold: light-dark(var(--medal-gold-light), var(--medal-gold-dark));
+    --scrollbar-track: light-dark(#ece9e0, #1b1b19);
+    --scrollbar-thumb: light-dark(#8f8b80, #6e6b63);
+  }
+
+  /* Viewport-wide color-scheme + declarative meta reflection */
+  color-scheme: light dark;
+  accent-color: var(--accent-action);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+}
+
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native Top-Layer Modal Dialog Rules (per modern-web-guidance) */
+dialog:modal {
+  overscroll-behavior: contain;
+  margin: auto;
+  max-inline-size: min(94dvw, 32rem);
+  max-block-size: min(88dvh, 46rem);
+  inline-size: 100%;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 1.25rem;
+  padding: 0;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.24);
+}
+
+@media (max-width: 640px) {
+  dialog.mob-sheet:modal {
+    margin-block-end: 0;
+    margin-inline: auto;
+    max-inline-size: 100dvw;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    border-start-start-radius: 1.5rem;
+    border-start-end-radius: 1.5rem;
+  }
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(15, 15, 13, 0.48);
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open] {
+    animation: mob-dialog-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes mob-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Focus-visible tactile clarity */
+:focus-visible {
+  outline: 2px solid var(--accent-action);
+  outline-offset: 2px;
+}

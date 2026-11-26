@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+dist/
+next-env.d.ts
+*.tsbuildinfo
+
+# Environment & Logs
+.env
+.env*.local
+*.log
+
+# Agent Harness, Skills, Memory & Progress Docs (STRICTLY LOCAL — DO NOT COMMIT OR PUSH)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agent/
+.agents/
+.claude/
+.gemini/
+.obsidian/
+skills-lock.json
+memory/
+docs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
