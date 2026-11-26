@@ -215,6 +215,20 @@ export const ACHIEVEMENTS_CATALOG: Achievement[] = [
     tier: "gold",
     category: "momentum",
   },
+  {
+    id: "ach-gym-pr",
+    title: "Nuevo Récord Personal",
+    description: "Superaste tu mejor 1RM estimado en un ejercicio de fuerza.",
+    tier: "gold",
+    category: "body",
+  },
+  {
+    id: "ach-body-checkin",
+    title: "Control Consciente",
+    description: "Registraste tus medidas corporales para seguir tendencias reales sin obsesión.",
+    tier: "silver",
+    category: "body",
+  },
 ];
 
 export function getLocalDateKey(offsetDays = 0): string {

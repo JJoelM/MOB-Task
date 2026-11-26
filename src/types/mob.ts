@@ -8,6 +8,69 @@ export type MedalTier = "bronze" | "silver" | "gold";
 
 export type NavSection = "today" | "plan" | "progress" | "bonds";
 
+export type ProgressSubTab = "hud" | "gym" | "body" | "stats";
+
+export type MeasurementZone =
+  | "neck"
+  | "waist"
+  | "hip"
+  | "shoulders"
+  | "chest"
+  | "biceps"
+  | "thigh"
+  | "calf";
+
+export type MeasurementMode = "solo" | "assisted";
+
+export type MorphologicalProfileId =
+  | "athletic-meso"
+  | "lean-agile"
+  | "power-enduro"
+  | "balanced";
+
+export interface BodyMeasurementSnapshot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  sex: "male" | "female";
+  heightCm: number;
+  weightKg: number;
+  neckCm: number;
+  waistCm: number;
+  hipCm?: number;
+  shouldersCm?: number;
+  chestCm?: number;
+  bicepsCm?: number;
+  thighCm?: number;
+  calfCm?: number;
+  estimatedBodyFatPct?: number;
+  waistToHeightRatio: number;
+  shoulderToWaistRatio?: number;
+  morphologicalProfile: MorphologicalProfileId;
+  modeUsed: MeasurementMode;
+  notes?: string;
+}
+
+export type GymMuscleGroup = "push" | "pull" | "legs" | "core";
+
+export interface GymExercise {
+  id: string;
+  name: string;
+  muscleGroup: GymMuscleGroup;
+  isCompound?: boolean;
+}
+
+export interface GymSetEntry {
+  id: string;
+  exerciseId: string;
+  date: string;
+  weightKg: number;
+  reps: number;
+  estimated1RmKg: number;
+  volumeKg: number;
+  isPr: boolean;
+  timestamp: string;
+}
+
 export interface HabitTierSpec {
   label: string;
   minutes: number;
@@ -156,6 +219,9 @@ export interface MobState {
   crewMembers: CrewMember[];
   crewChallenge: CrewChallenge;
   soundEnabled: boolean;
+  bodySnapshots: BodyMeasurementSnapshot[];
+  gymExercises: GymExercise[];
+  gymSets: GymSetEntry[];
 }
 
 /* ============================================================================
