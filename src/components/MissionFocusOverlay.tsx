@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, Headphones, Pause, Play, Users, X } from "lucide-react";
+import { Check, Pause, Play, Users, X } from "lucide-react";
 import { useMob } from "@/context/MobContext";
 import { ATTRIBUTE_META } from "@/lib/templates";
 import { soundEngine } from "@/lib/sound";
@@ -11,13 +11,11 @@ export function MissionFocusOverlay() {
   const { activeMission, state, finishMissionSession, cancelMissionSession } = useMob();
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [ambientOn, setAmbientOn] = useState(false);
 
   const totalSeconds = (activeMission?.targetMinutes ?? 5) * 60;
 
   useEffect(() => {
     if (!activeMission) {
-      setAmbientOn(false);
       return;
     }
     setSecondsLeft(activeMission.targetMinutes * 60);
@@ -27,16 +25,16 @@ export function MissionFocusOverlay() {
   useEffect(() => {
     if (!activeMission || paused) return;
     const timer = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setSecondsLeft((prev) => {
+        if (prev === 1) {
+          soundEngine.playMissionBell();
+          return 0;
+        }
+        return prev > 0 ? prev - 1 : 0;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [activeMission, paused]);
-
-  const toggleAmbient = () => {
-    const next = !ambientOn;
-    setAmbientOn(next);
-    soundEngine.toggleAmbientFocus(next);
-  };
 
   if (!activeMission) return null;
 
@@ -136,19 +134,6 @@ export function MissionFocusOverlay() {
           >
             {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
             {paused ? "Reanudar" : "Pausar"}
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleAmbient}
-            className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold cursor-pointer transition-colors ${
-              ambientOn
-                ? "border-[var(--accent-focus)] bg-[var(--accent-focus-soft)] text-[var(--accent-focus)]"
-                : "border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)]"
-            }`}
-          >
-            <Headphones className="w-4 h-4" />
-            {ambientOn ? "Audio Foco Activo" : "Sonido Ambiental"}
           </button>
 
           <motion.button

@@ -2,14 +2,15 @@
 
 class TactileAudioEngine {
   private ctx: AudioContext | null = null;
-  private focusNoiseNode: AudioNode | null = null;
-  private focusGainNode: GainNode | null = null;
   public soundEnabled = true;
 
   private ensureContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
     }
     if (this.ctx && this.ctx.state === "suspended") {
@@ -62,55 +63,77 @@ class TactileAudioEngine {
     });
   }
 
-  public toggleAmbientFocus(enable: boolean) {
+  /**
+   * Warm, resonant two-harmonic completion bell (~0.45s)
+   * Played when a mission countdown finishes or Day Debrief closes.
+   */
+  public playMissionBell() {
+    if (!this.soundEnabled) return;
     const ctx = this.ensureContext();
     if (!ctx) return;
 
-    if (!enable) {
-      if (this.focusGainNode) {
-        this.focusGainNode.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.15);
-        setTimeout(() => {
-          this.focusNoiseNode?.disconnect();
-          this.focusNoiseNode = null;
-          this.focusGainNode = null;
-        }, 250);
-      }
-      return;
-    }
+    const now = ctx.currentTime;
+    const harmonics: Array<{ freq: number; peak: number; type: OscillatorType }> = [
+      { freq: 523.25, peak: 0.095, type: "sine" }, // C5 warm fundamental
+      { freq: 783.99, peak: 0.055, type: "triangle" }, // G5 resonant fifth
+    ];
 
-    if (this.focusNoiseNode) return;
+    harmonics.forEach(({ freq, peak, type }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(peak, now + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.45);
+    });
+  }
 
-    // Warm Brown Noise buffer for focused "En Misión" mode
-    const bufferSize = ctx.sampleRate * 2;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const output = buffer.getChannelData(0);
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      output[i] = (lastOut + 0.02 * white) / 1.02;
-      lastOut = output[i];
-      output[i] *= 1.8;
-    }
+  /**
+   * Iconic ascending 4-step harmonic sequence (~0.9s)
+   * Played when the MOB 0% -> 100% counter reaches 100%.
+   */
+  public playMobHundredSequence() {
+    if (!this.soundEnabled) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
 
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
+    const now = ctx.currentTime;
+    const steps: Array<{
+      offset: number;
+      freqs: number[];
+      duration: number;
+      peak: number;
+    }> = [
+      { offset: 0.0, freqs: [392.0], duration: 0.18, peak: 0.08 }, // G4
+      { offset: 0.14, freqs: [523.25], duration: 0.19, peak: 0.09 }, // C5
+      { offset: 0.28, freqs: [659.25], duration: 0.21, peak: 0.1 }, // E5
+      { offset: 0.43, freqs: [783.99, 1046.5], duration: 0.46, peak: 0.11 }, // G5 + C6 warm resolution
+    ];
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 420;
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 0.5);
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    source.start();
-
-    this.focusNoiseNode = source;
-    this.focusGainNode = gain;
+    steps.forEach((step) => {
+      const start = now + step.offset;
+      step.freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === 0 ? "sine" : "triangle";
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.001, start);
+        gain.gain.linearRampToValueAtTime(
+          idx === 0 ? step.peak : step.peak * 0.65,
+          start + 0.016
+        );
+        gain.gain.exponentialRampToValueAtTime(0.001, start + step.duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + step.duration + 0.01);
+      });
+    });
   }
 }
 
