@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de cintura en solitario frente a espejo">
+  <title>Cintura — Modo Solo (Frente a espejo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="138" y1="24" x2="138" y2="194" stroke-dasharray="3 5" />
+    <line x1="36" y1="118" x2="222" y2="118" stroke-dasharray="2 4" />
+    <path d="M24 66 H30 M24 92 H28 M24 118 H32 M24 144 H28 M24 170 H30" />
+  </g>
+
+  <!-- Mirror reference frame (Solo visual cue) -->
+  <g transform="translate(232, 36)">
+    <rect x="0" y="0" width="66" height="122" rx="8" stroke="#87847A" stroke-opacity="0.38" fill="#87847A" fill-opacity="0.06" stroke-width="1.4" />
+    <line x1="11" y1="18" x2="25" y2="6" stroke="#87847A" stroke-opacity="0.32" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Side torso reflection check -->
+    <path d="M28 28 C30 52 29 72 31 94 M42 28 C40 54 43 72 45 94" stroke="#6E6B63" stroke-opacity="0.55" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    <line x1="27" y1="68" x2="45" y2="68" stroke="#D95D39" stroke-width="2.2" stroke-linecap="round" />
+    <text x="33" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#87847A">Espejo lateral</text>
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#87847A">SOLO · EXHALACIÓN NORMAL</text>
+
+  <!-- Anatomical silhouette: Ribcage, Natural Waist (umbilicus), Pelvis/Iliac flare -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M88 44 C90 70 100 94 102 118 C100 138 88 156 84 180 L192 180 C188 156 176 138 174 118 C176 94 186 70 188 44 Z" />
+  </g>
+
+  <!-- Ribcage arch & navel reference -->
+  <g stroke="#6E6B63" stroke-opacity="0.42" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M112 84 Q138 70 164 84" />
+    <circle cx="138" cy="118" r="2" fill="#6E6B63" />
+  </g>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M102 116 C116 107 160 107 174 116" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M101 118 C116 127 160 127 175 118" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark dot at front navel level -->
+  <circle cx="138" cy="124" r="4.2" fill="#D95D39" />
+  <circle cx="138" cy="124" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Postura neutra · Línea del ombligo sin meter abdomen</text>
+</svg>

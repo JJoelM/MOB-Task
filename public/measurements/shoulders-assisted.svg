@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de hombros con asistencia">
+  <title>Hombros — Con asistencia (Dúo / Amigo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="128" y1="24" x2="128" y2="194" stroke-dasharray="3 5" />
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2B7A57">ASISTIDO · MÁXIMA PRECISIÓN DELTOIDEA</text>
+
+  <!-- Anatomical silhouette: Neck, Deltoids, Upper Torso & Relaxed Arms -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M110 44 L110 64 C88 72 58 78 50 102 C46 116 48 146 52 178 L76 178 L80 128 L82 178 L174 178 L176 128 L180 178 L204 178 C208 146 210 116 206 102 C198 78 168 72 146 64 L146 44 Z" />
+  </g>
+
+  <g stroke="#6E6B63" stroke-opacity="0.42" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M84 82 Q108 88 124 92" />
+    <path d="M172 82 Q148 88 132 92" />
+  </g>
+
+  <!-- Assistant lateral sightline (#2B7A57) -->
+  <g stroke="#2B7A57" fill="none">
+    <line x1="42" y1="108" x2="260" y2="108" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.75" />
+    <path d="M266 108 C272 101 282 101 288 108 C282 115 272 115 266 108 Z" stroke-width="1.7" />
+    <circle cx="277" cy="108" r="2.6" fill="#2B7A57" />
+    <path d="M256 108 L246 104 M256 108 L246 112" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+  <text x="275" y="92" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#2B7A57">Asistente</text>
+  <text x="275" y="129" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#2B7A57">Nivel horizontal</text>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M49 106 C80 94 176 94 207 106" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M48 108 C80 120 176 120 208 108" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark lateral deltoid dot -->
+  <circle cx="206" cy="108" r="4.2" fill="#D95D39" />
+  <circle cx="206" cy="108" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Brazos relajados · Asistente al costado verifica espalda recta</text>
+</svg>
