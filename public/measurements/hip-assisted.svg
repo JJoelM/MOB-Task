@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de cadera con asistencia lateral">
+  <title>Cadera — Con asistencia (Dúo / Amigo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="128" y1="24" x2="128" y2="194" stroke-dasharray="3 5" />
+    <path d="M24 68 H30 M24 97 H28 M24 126 H32 M24 155 H28" />
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2B7A57">ASISTIDO · NIVEL HORIZONTAL LATERAL</text>
+
+  <!-- Anatomical silhouette: Pelvis / Hip & Upper Thighs -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M94 44 C94 66 90 80 80 98 C70 114 70 136 78 156 L84 182 L124 182 L128 152 L132 182 L172 182 L178 156 C186 136 186 114 176 98 C166 80 162 66 162 44 Z" />
+  </g>
+
+  <!-- Assistant lateral sightline (#2B7A57) -->
+  <g stroke="#2B7A57" fill="none">
+    <line x1="62" y1="126" x2="260" y2="126" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.75" />
+    <path d="M266 126 C272 119 282 119 288 126 C282 133 272 133 266 126 Z" stroke-width="1.7" />
+    <circle cx="277" cy="126" r="2.6" fill="#2B7A57" />
+    <path d="M256 126 L246 122 M256 126 L246 130" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+  <text x="275" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#2B7A57">Asistente</text>
+  <text x="275" y="147" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#2B7A57">Al costado</text>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M72 124 C92 114 164 114 184 124" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M71 126 C92 136 164 136 185 126" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark read from side so assistant stays off front -->
+  <circle cx="183" cy="126" r="4.2" fill="#D95D39" />
+  <circle cx="183" cy="126" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Lectura lateral a nivel de ojos · Asistente al costado (pies juntos)</text>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de pecho con asistencia lateral">
+  <title>Pecho / Torso — Con asistencia (Dúo / Amigo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="130" y1="24" x2="130" y2="194" stroke-dasharray="3 5" />
+    <path d="M24 68 H30 M24 90 H28 M24 112 H32 M24 134 H28 M24 156 H30" />
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2B7A57">ASISTIDO · ESCÁPULAS NIVELADAS</text>
+
+  <!-- Anatomical silhouette: Upper Torso & Relaxed Arms -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 44 L112 60 C90 66 66 74 60 96 L58 176 L80 176 L84 106 C86 132 90 156 92 180 L168 180 C170 156 174 132 176 106 L180 176 L202 176 L200 96 C194 74 170 66 148 60 L148 44 Z" />
+  </g>
+
+  <g stroke="#6E6B63" stroke-opacity="0.42" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M90 108 C100 122 118 122 127 114" />
+    <path d="M170 108 C160 122 142 122 133 114" />
+  </g>
+
+  <!-- Assistant lateral sightline (#2B7A57) -->
+  <g stroke="#2B7A57" fill="none">
+    <line x1="76" y1="112" x2="260" y2="112" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.75" />
+    <path d="M266 112 C272 105 282 105 288 112 C282 119 272 119 266 112 Z" stroke-width="1.7" />
+    <circle cx="277" cy="112" r="2.6" fill="#2B7A57" />
+    <path d="M256 112 L246 108 M256 112 L246 116" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+  <text x="275" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#2B7A57">Asistente</text>
+  <text x="275" y="133" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#2B7A57">Nivel ojos</text>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M84 110 C102 100 158 100 176 110" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M83 112 C102 122 158 122 177 112" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark lateral dot -->
+  <circle cx="176" cy="112" r="4.2" fill="#D95D39" />
+  <circle cx="176" cy="112" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Brazos relajados · Asistente al costado alinea cinta sobre escápulas</text>
+</svg>

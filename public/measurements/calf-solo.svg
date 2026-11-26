@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de gemelo en solitario">
+  <title>Gemelo / Pantorrilla — Modo Solo (Frente a espejo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="138" y1="24" x2="138" y2="194" stroke-dasharray="3 5" />
+    <line x1="36" y1="106" x2="220" y2="106" stroke-dasharray="2 4" />
+    <path d="M24 66 H30 M24 106 H32 M24 146 H30" />
+  </g>
+
+  <!-- Mirror / Low step reference frame -->
+  <g transform="translate(232, 36)">
+    <rect x="0" y="0" width="66" height="122" rx="8" stroke="#87847A" stroke-opacity="0.38" fill="#87847A" fill-opacity="0.06" stroke-width="1.4" />
+    <line x1="11" y1="18" x2="25" y2="6" stroke="#87847A" stroke-opacity="0.32" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Side gastrocnemius curve in mirror -->
+    <path d="M26 28 L28 96 M38 28 C48 44 48 64 38 82 L36 96" stroke="#6E6B63" stroke-opacity="0.58" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    <line x1="25" y1="54" x2="49" y2="54" stroke="#D95D39" stroke-width="2.2" stroke-linecap="round" />
+    <text x="33" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#87847A">Espejo bajo</text>
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#87847A">SOLO · TALÓN APOYADO · MAYOR VOLUMEN</text>
+
+  <!-- Anatomical silhouette: Knee joint, Gastrocnemius belly, Achilles & Ankle/Foot -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M114 44 C114 58 112 68 106 84 C98 104 102 126 114 148 L120 174 L112 182 L162 182 L156 172 L160 148 C172 126 176 104 168 84 C162 68 160 58 160 44 Z" />
+  </g>
+
+  <!-- Subtle knee & sole ground line -->
+  <g stroke="#6E6B63" stroke-opacity="0.42" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M124 58 Q137 64 150 58" />
+    <line x1="96" y1="182" x2="180" y2="182" />
+  </g>
+
+  <!-- Measuring tape back-loop at widest gastrocnemius perimeter -->
+  <path d="M101 104 C118 96 156 96 173 104" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M100 106 C118 114 156 114 174 106" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark dot at front shin -->
+  <circle cx="137" cy="112" r="4.2" fill="#D95D39" />
+  <circle cx="137" cy="112" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Planta apoyada sin contraer · Punto más ancho del gemelo</text>
+</svg>

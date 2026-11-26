@@ -13,7 +13,7 @@ import { BondsView } from "@/components/BondsView";
 import { MissionFocusOverlay } from "@/components/MissionFocusOverlay";
 
 function MobWorkspace() {
-  const { state, hydrated } = useMob();
+  const { state, hydrated, setRequestedProgressTab } = useMob();
   const [activeNav, setActiveNav] = useState<NavSection>("today");
 
   if (!hydrated) {
@@ -42,7 +42,14 @@ function MobWorkspace() {
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
           >
-            {activeNav === "today" && <TodayView />}
+            {activeNav === "today" && (
+              <TodayView
+                onOpenGymTracker={() => {
+                  setRequestedProgressTab("gym");
+                  setActiveNav("progress");
+                }}
+              />
+            )}
             {activeNav === "plan" && <PlanView />}
             {activeNav === "progress" && <ProgressHudView />}
             {activeNav === "bonds" && <BondsView />}

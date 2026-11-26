@@ -11,10 +11,15 @@ import React, {
 import {
   ActiveMissionSession,
   AttributeKey,
+  BodyMeasurementSnapshot,
   FlashEvent,
+  GymExercise,
+  GymMuscleGroup,
+  GymSetEntry,
   Habit,
   MedalTier,
   MobState,
+  ProgressSubTab,
   TaskItem,
   TimeOfDay,
   ToastNotice,
@@ -25,6 +30,13 @@ import {
   getLocalDateKey,
   STARTER_HABIT_TEMPLATES,
 } from "@/lib/templates";
+import {
+  buildBodySnapshot,
+  calculateEpley1Rm,
+  calculateSetVolume,
+  isNewPersonalRecord,
+  MORPHOLOGICAL_PROFILES,
+} from "@/lib/fitness-domain";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { soundEngine } from "@/lib/sound";
 
@@ -37,6 +49,105 @@ function createInviteCode(): string {
     out += chars[Math.floor(Math.random() * chars.length)];
   }
   return out;
+}
+
+const DEFAULT_GYM_EXERCISES: GymExercise[] = [
+  { id: "ex-bench", name: "Press de Banca", muscleGroup: "push", isCompound: true },
+  { id: "ex-squat", name: "Sentadilla Libre", muscleGroup: "legs", isCompound: true },
+  { id: "ex-rdl", name: "Peso Muerto Rumano", muscleGroup: "legs", isCompound: true },
+  { id: "ex-pullup", name: "Dominadas / Jalón", muscleGroup: "pull", isCompound: true },
+  { id: "ex-ohp", name: "Press Militar", muscleGroup: "push", isCompound: true },
+  { id: "ex-row", name: "Remo con Barra", muscleGroup: "pull", isCompound: true },
+  { id: "ex-hip", name: "Hip Thrust", muscleGroup: "legs", isCompound: true },
+  { id: "ex-curl", name: "Curl de Bíceps", muscleGroup: "pull", isCompound: false },
+];
+
+function buildSeedGymSets(): GymSetEntry[] {
+  const rawSeeds: Array<{
+    id: string;
+    exerciseId: string;
+    offsetDays: number;
+    weightKg: number;
+    reps: number;
+  }> = [
+    { id: "seed-set-1", exerciseId: "ex-bench", offsetDays: -28, weightKg: 60, reps: 8 },
+    { id: "seed-set-2", exerciseId: "ex-squat", offsetDays: -28, weightKg: 80, reps: 6 },
+    { id: "seed-set-3", exerciseId: "ex-row", offsetDays: -28, weightKg: 55, reps: 10 },
+    { id: "seed-set-4", exerciseId: "ex-bench", offsetDays: -14, weightKg: 62.5, reps: 8 },
+    { id: "seed-set-5", exerciseId: "ex-squat", offsetDays: -14, weightKg: 85, reps: 6 },
+    { id: "seed-set-6", exerciseId: "ex-row", offsetDays: -14, weightKg: 57.5, reps: 10 },
+    { id: "seed-set-7", exerciseId: "ex-bench", offsetDays: -5, weightKg: 65, reps: 8 },
+    { id: "seed-set-8", exerciseId: "ex-squat", offsetDays: -5, weightKg: 90, reps: 6 },
+    { id: "seed-set-9", exerciseId: "ex-row", offsetDays: -5, weightKg: 60, reps: 10 },
+  ];
+
+  return rawSeeds.map((item) => {
+    const date = getLocalDateKey(item.offsetDays);
+    return {
+      id: item.id,
+      exerciseId: item.exerciseId,
+      date,
+      weightKg: item.weightKg,
+      reps: item.reps,
+      estimated1RmKg: calculateEpley1Rm(item.weightKg, item.reps),
+      volumeKg: calculateSetVolume(item.weightKg, item.reps),
+      isPr: false,
+      timestamp: `${date}T18:00:00.000Z`,
+    };
+  });
+}
+
+function buildSeedBodySnapshots(): BodyMeasurementSnapshot[] {
+  return [
+    buildBodySnapshot({
+      id: "seed-body-1",
+      date: getLocalDateKey(-42),
+      sex: "male",
+      heightCm: 178,
+      weightKg: 78.4,
+      neckCm: 38.5,
+      waistCm: 85.5,
+      shouldersCm: 114.0,
+      chestCm: 99.5,
+      bicepsCm: 35.0,
+      thighCm: 56.5,
+      calfCm: 37.5,
+      modeUsed: "assisted",
+      notes: "Punto de partida tranquilo",
+    }),
+    buildBodySnapshot({
+      id: "seed-body-2",
+      date: getLocalDateKey(-21),
+      sex: "male",
+      heightCm: 178,
+      weightKg: 77.8,
+      neckCm: 38.5,
+      waistCm: 84.2,
+      shouldersCm: 114.8,
+      chestCm: 100.2,
+      bicepsCm: 35.4,
+      thighCm: 57.0,
+      calfCm: 37.7,
+      modeUsed: "solo",
+      notes: "Mejor postura y energía sostenida",
+    }),
+    buildBodySnapshot({
+      id: "seed-body-3",
+      date: getLocalDateKey(-7),
+      sex: "male",
+      heightCm: 178,
+      weightKg: 77.3,
+      neckCm: 38.6,
+      waistCm: 83.0,
+      shouldersCm: 115.5,
+      chestCm: 101.0,
+      bicepsCm: 35.8,
+      thighCm: 57.5,
+      calfCm: 37.9,
+      modeUsed: "assisted",
+      notes: "Cintura más firme y fuerza en subida",
+    }),
+  ];
 }
 
 function buildInitialState(): MobState {
@@ -149,6 +260,9 @@ function buildInitialState(): MobState {
       daysRemaining: 3,
     },
     soundEnabled: true,
+    bodySnapshots: buildSeedBodySnapshots(),
+    gymExercises: DEFAULT_GYM_EXERCISES,
+    gymSets: buildSeedGymSets(),
   };
 }
 
@@ -160,6 +274,8 @@ interface MobContextValue {
   toasts: ToastNotice[];
   todayFlashEvent: FlashEvent | null;
   cloudConnected: boolean;
+  requestedProgressTab: ProgressSubTab;
+  setRequestedProgressTab: (tab: ProgressSubTab) => void;
   completeOnboarding: (params: {
     userName: string;
     selectedTemplateIds: string[];
@@ -194,6 +310,25 @@ interface MobContextValue {
   simulatePartnerProgress: () => void;
   updatePartnerInfo: (partnerName: string, connected: boolean) => void;
   addCrewFriend: (name: string) => void;
+  addBodySnapshot: (
+    input: Omit<
+      BodyMeasurementSnapshot,
+      | "id"
+      | "estimatedBodyFatPct"
+      | "waistToHeightRatio"
+      | "shoulderToWaistRatio"
+      | "morphologicalProfile"
+    >
+  ) => BodyMeasurementSnapshot;
+  deleteBodySnapshot: (id: string) => void;
+  addGymExercise: (name: string, muscleGroup: GymMuscleGroup) => GymExercise;
+  logGymSet: (
+    exerciseId: string,
+    weightKg: number,
+    reps: number,
+    dateKey?: string
+  ) => GymSetEntry;
+  deleteGymSet: (id: string) => void;
   toggleSound: () => void;
   dismissToast: (id: string) => void;
 }
@@ -206,6 +341,8 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
   const [activeMission, setActiveMission] = useState<ActiveMissionSession | null>(null);
   const [toasts, setToasts] = useState<ToastNotice[]>([]);
   const [todayKey, setTodayKey] = useState<string>(() => getLocalDateKey(0));
+  const [requestedProgressTab, setRequestedProgressTab] =
+    useState<ProgressSubTab>("hud");
 
   const pushToast = useCallback(
     (title: string, subtitle?: string, tone: ToastNotice["tone"] = "sage") => {
@@ -232,6 +369,15 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
         setState((prev) => ({
           ...prev,
           ...parsed,
+          bodySnapshots: Array.isArray(parsed.bodySnapshots)
+            ? parsed.bodySnapshots
+            : prev.bodySnapshots,
+          gymExercises: Array.isArray(parsed.gymExercises)
+            ? parsed.gymExercises
+            : prev.gymExercises,
+          gymSets: Array.isArray(parsed.gymSets)
+            ? parsed.gymSets
+            : prev.gymSets,
           duo: {
             ...prev.duo,
             ...(parsed.duo ?? {}),
@@ -326,7 +472,14 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
 
   // Helper to evaluate and unlock achievements automatically
   const checkAndUnlockAchievements = useCallback(
-    (draft: MobState, extraFlags?: { beatProcrastination?: boolean; duoAction?: boolean }): MobState => {
+    (
+      draft: MobState,
+      extraFlags?: {
+        beatProcrastination?: boolean;
+        duoAction?: boolean;
+        bodyCheckin?: boolean;
+      }
+    ): MobState => {
       const unlocked = { ...draft.unlockedAchievementIds };
       const newlyUnlocked: string[] = [];
       const nowIso = new Date().toISOString();
@@ -359,6 +512,12 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       }
       if (draft.momentum >= 75) {
         grant("ach-momentum-75");
+      }
+      if (draft.gymSets.some((s) => s.isPr)) {
+        grant("ach-gym-pr");
+      }
+      if (draft.bodySnapshots.length >= 4 || extraFlags?.bodyCheckin) {
+        grant("ach-body-checkin");
       }
 
       if (newlyUnlocked.length > 0) {
@@ -990,6 +1149,147 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
     [pushToast]
   );
 
+  const addBodySnapshot = useCallback(
+    (
+      input: Omit<
+        BodyMeasurementSnapshot,
+        | "id"
+        | "estimatedBodyFatPct"
+        | "waistToHeightRatio"
+        | "shoulderToWaistRatio"
+        | "morphologicalProfile"
+      >
+    ): BodyMeasurementSnapshot => {
+      soundEngine.playMedal("silver");
+      const snapshot = buildBodySnapshot(input);
+      setState((prev) => {
+        const nextXp = { ...prev.attributeXp };
+        nextXp.disciplina += 12;
+        nextXp.fuerza += 8;
+        const nextSnapshots = [...prev.bodySnapshots, snapshot].sort((a, b) =>
+          a.date.localeCompare(b.date)
+        );
+        const nextDraft: MobState = {
+          ...prev,
+          momentum: Math.min(100, prev.momentum + 4),
+          attributeXp: nextXp,
+          bodySnapshots: nextSnapshots,
+        };
+        return checkAndUnlockAchievements(nextDraft, { bodyCheckin: true });
+      });
+      pushToast(
+        "Control corporal guardado",
+        `${MORPHOLOGICAL_PROFILES[snapshot.morphologicalProfile].label} · WHtR ${snapshot.waistToHeightRatio.toFixed(2)}`,
+        "sage"
+      );
+      return snapshot;
+    },
+    [checkAndUnlockAchievements, pushToast]
+  );
+
+  const deleteBodySnapshot = useCallback((id: string) => {
+    soundEngine.playTap();
+    setState((prev) => ({
+      ...prev,
+      bodySnapshots: prev.bodySnapshots.filter((b) => b.id !== id),
+    }));
+  }, []);
+
+  const addGymExercise = useCallback(
+    (name: string, muscleGroup: GymMuscleGroup): GymExercise => {
+      soundEngine.playTap();
+      const cleanName = name.trim() || "Ejercicio personalizado";
+      const created: GymExercise = {
+        id: `ex-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        name: cleanName,
+        muscleGroup,
+        isCompound: false,
+      };
+      setState((prev) => ({
+        ...prev,
+        gymExercises: [...prev.gymExercises, created],
+      }));
+      pushToast("Ejercicio añadido", `${created.name} listo para registrar series.`);
+      return created;
+    },
+    [pushToast]
+  );
+
+  const logGymSet = useCallback(
+    (
+      exerciseId: string,
+      weightKg: number,
+      reps: number,
+      dateKey = todayKey
+    ): GymSetEntry => {
+      const cleanWeight = Math.max(0, Number(weightKg) || 0);
+      const cleanReps = Math.max(0, Math.round(Number(reps) || 0));
+      const estimated1RmKg = calculateEpley1Rm(cleanWeight, cleanReps);
+      const volumeKg = calculateSetVolume(cleanWeight, cleanReps);
+      const prevForExercise = state.gymSets.filter(
+        (s) => s.exerciseId === exerciseId
+      );
+      const isPr = isNewPersonalRecord(estimated1RmKg, prevForExercise);
+
+      const entry: GymSetEntry = {
+        id: `set-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        exerciseId,
+        date: dateKey,
+        weightKg: cleanWeight,
+        reps: cleanReps,
+        estimated1RmKg,
+        volumeKg,
+        isPr,
+        timestamp: new Date().toISOString(),
+      };
+
+      soundEngine.playMedal(isPr ? "gold" : "bronze");
+
+      setState((prev) => {
+        const latestPrevForEx = prev.gymSets.filter(
+          (s) => s.exerciseId === exerciseId
+        );
+        const verifiedPr = isNewPersonalRecord(estimated1RmKg, latestPrevForEx);
+        const committedEntry: GymSetEntry =
+          verifiedPr === entry.isPr ? entry : { ...entry, isPr: verifiedPr };
+
+        const nextXp = { ...prev.attributeXp };
+        nextXp.fuerza += committedEntry.isPr ? 14 : 6;
+        nextXp.disciplina += 3;
+
+        const nextDraft: MobState = {
+          ...prev,
+          momentum: Math.min(
+            100,
+            prev.momentum + (committedEntry.isPr ? 5 : 2)
+          ),
+          attributeXp: nextXp,
+          gymSets: [...prev.gymSets, committedEntry],
+        };
+        return checkAndUnlockAchievements(nextDraft);
+      });
+
+      if (isPr) {
+        pushToast(
+          "¡Nuevo Récord Personal!",
+          `1RM estimado: ${estimated1RmKg} kg`,
+          "gold"
+        );
+      }
+
+      return entry;
+    },
+    [todayKey, state.gymSets, checkAndUnlockAchievements, pushToast]
+  );
+
+  const deleteGymSet = useCallback((id: string) => {
+    soundEngine.playTap();
+    setState((prev) => ({
+      ...prev,
+      gymSets: prev.gymSets.filter((s) => s.id !== id),
+    }));
+  }, []);
+
   const toggleSound = useCallback(() => {
     setState((prev) => {
       const next = !prev.soundEnabled;
@@ -1021,6 +1321,8 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       toasts,
       todayFlashEvent,
       cloudConnected: isSupabaseConfigured,
+      requestedProgressTab,
+      setRequestedProgressTab,
       completeOnboarding,
       logHabitTier,
       clearHabitLog,
@@ -1043,6 +1345,11 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       simulatePartnerProgress,
       updatePartnerInfo,
       addCrewFriend,
+      addBodySnapshot,
+      deleteBodySnapshot,
+      addGymExercise,
+      logGymSet,
+      deleteGymSet,
       toggleSound,
       dismissToast,
     }),
@@ -1053,6 +1360,7 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       activeMission,
       toasts,
       todayFlashEvent,
+      requestedProgressTab,
       completeOnboarding,
       logHabitTier,
       clearHabitLog,
@@ -1075,6 +1383,11 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       simulatePartnerProgress,
       updatePartnerInfo,
       addCrewFriend,
+      addBodySnapshot,
+      deleteBodySnapshot,
+      addGymExercise,
+      logGymSet,
+      deleteGymSet,
       toggleSound,
       dismissToast,
     ]

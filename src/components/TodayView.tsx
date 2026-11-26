@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
   Clock,
+  Dumbbell,
   Flag,
   Play,
   Plus,
@@ -35,7 +36,11 @@ const MEDAL_STYLES: Record<
   gold: { short: "O", name: "Oro", colorVar: "var(--medal-gold)" },
 };
 
-export function TodayView() {
+export function TodayView({
+  onOpenGymTracker,
+}: {
+  onOpenGymTracker?: () => void;
+} = {}) {
   const {
     state,
     todayKey,
@@ -359,6 +364,7 @@ export function TodayView() {
                           attribute: habit.primaryAttribute,
                         })
                       }
+                      onOpenGymTracker={onOpenGymTracker}
                     />
                   );
                 })}
@@ -404,6 +410,7 @@ function HabitRowCard({
   onSelectTier,
   onClear,
   onStartTimer,
+  onOpenGymTracker,
 }: {
   habit: Habit;
   currentTier?: MedalTier;
@@ -412,8 +419,12 @@ function HabitRowCard({
   onSelectTier: (tier: MedalTier) => void;
   onClear: () => void;
   onStartTimer: (tier: MedalTier) => void;
+  onOpenGymTracker?: () => void;
 }) {
   const attrMeta = ATTRIBUTE_META[habit.primaryAttribute];
+  const isStrengthHabit =
+    habit.primaryAttribute === "fuerza" ||
+    habit.secondaryAttribute === "fuerza";
   const nextSuggestedTier: MedalTier = !currentTier
     ? "bronze"
     : currentTier === "bronze"
@@ -472,8 +483,23 @@ function HabitRowCard({
           </div>
         </div>
 
-        {/* Tactile Bronze / Silver / Gold Selector + Play Timer */}
-        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+        {/* Tactile Bronze / Silver / Gold Selector + Play Timer + Gym Shortcut */}
+        <div className="flex flex-wrap items-center justify-end gap-1.5 self-end sm:self-center shrink-0">
+          {isStrengthHabit && onOpenGymTracker && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenGymTracker}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-canvas)] text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--accent-sage)] hover:text-[var(--accent-sage)] transition-colors cursor-pointer"
+            >
+              <Dumbbell
+                className="w-3.5 h-3.5 text-[var(--accent-sage)]"
+                aria-hidden="true"
+              />
+              <span>Cargas Gym</span>
+            </motion.button>
+          )}
+
           {(["bronze", "silver", "gold"] as MedalTier[]).map((tier) => {
             const active = currentTier === tier;
             const passed =

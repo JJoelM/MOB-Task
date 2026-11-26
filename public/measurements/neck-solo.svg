@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de cuello en solitario frente a espejo">
+  <title>Cuello — Modo Solo (Frente a espejo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="145" y1="22" x2="145" y2="196" stroke-dasharray="3 5" />
+    <line x1="36" y1="114" x2="226" y2="114" stroke-dasharray="2 4" />
+    <path d="M24 70 H30 M24 92 H28 M24 114 H32 M24 136 H28 M24 158 H30" />
+  </g>
+
+  <!-- Mirror reference frame (Solo visual cue) -->
+  <g transform="translate(232, 34)">
+    <rect x="0" y="0" width="66" height="122" rx="8" stroke="#87847A" stroke-opacity="0.38" fill="#87847A" fill-opacity="0.06" stroke-width="1.4" />
+    <line x1="12" y1="18" x2="26" y2="6" stroke="#87847A" stroke-opacity="0.32" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="16" y1="26" x2="34" y2="10" stroke="#87847A" stroke-opacity="0.24" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Mini side-profile reflection check -->
+    <path d="M36 34 C44 38 44 50 38 56 L37 78 L48 92" stroke="#6E6B63" stroke-opacity="0.55" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    <line x1="28" y1="70" x2="46" y2="70" stroke="#D95D39" stroke-width="2.2" stroke-linecap="round" />
+    <text x="33" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#87847A">Espejo lateral</text>
+  </g>
+
+  <!-- Top mode tag -->
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#87847A">SOLO · POSTURA NEUTRA</text>
+
+  <!-- Anatomical silhouette: Jaw, Neck, Trapezius & Clavicles -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M106 38 C108 62 122 76 145 78 C168 76 182 62 184 38" />
+    <path d="M122 73 C124 94 123 116 116 132 C102 146 76 154 56 164 L56 182 L234 182 L234 164 C214 154 188 146 174 132 C167 116 166 94 168 73" />
+  </g>
+
+  <!-- Subtle anatomical landmarks (clavicles & larynx reference) -->
+  <g stroke="#6E6B63" stroke-opacity="0.45" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M141 99 Q145 103 149 99" />
+    <path d="M96 152 Q122 156 139 162" />
+    <path d="M194 152 Q168 156 151 162" />
+  </g>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M121 112 C132 104 158 104 169 112" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M120 113 C132 121 158 121 170 113" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark / overlap caliper dot & solo finger cue -->
+  <circle cx="145" cy="119" r="4.2" fill="#D95D39" />
+  <circle cx="145" cy="119" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+  <line x1="145" y1="127" x2="145" y2="144" stroke="#D95D39" stroke-width="1.2" opacity="0.7" />
+
+  <!-- Callout labels -->
+  <text x="145" y="156" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Mano libre al frente · Bajo la nuez</text>
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Vista al frente · Cinta horizontal sin comprimir</text>
+</svg>

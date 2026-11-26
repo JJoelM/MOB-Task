@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de bíceps con asistencia lateral">
+  <title>Bíceps — Con asistencia (Dúo / Amigo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="138" y1="38" x2="138" y2="188" stroke-dasharray="3 5" />
+    <line x1="60" y1="114" x2="220" y2="114" stroke-dasharray="2 4" />
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2B7A57">ASISTIDO · PERPENDICULAR AL HÚMERO</text>
+
+  <!-- Anatomical silhouette: Shoulder & Relaxed Hanging Arm for true perpendicular circumference -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M74 52 C88 46 122 48 148 58 C164 66 170 84 168 114 C166 140 162 162 160 182 L124 182 C122 162 118 140 116 114 L112 96 L104 182 L68 182 Z" />
+  </g>
+
+  <!-- Midpoint vertical guide between acromion (64) and elbow (164) -->
+  <g stroke="#2B7A57" fill="none">
+    <line x1="188" y1="64" x2="188" y2="164" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.7" />
+    <line x1="183" y1="64" x2="193" y2="64" stroke-width="1.4" />
+    <line x1="183" y1="164" x2="193" y2="164" stroke-width="1.4" />
+    <!-- Sightline -->
+    <line x1="172" y1="114" x2="260" y2="114" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.8" />
+    <path d="M266 114 C272 107 282 107 288 114 C282 121 272 121 266 114 Z" stroke-width="1.7" />
+    <circle cx="277" cy="114" r="2.6" fill="#2B7A57" />
+  </g>
+  <text x="275" y="98" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#2B7A57">Asistente</text>
+  <text x="275" y="135" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#2B7A57">Mitad exacta</text>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M116 112 C128 105 156 105 168 112" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M115 114 C128 121 156 121 169 114" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark lateral dot -->
+  <circle cx="168" cy="114" r="4.2" fill="#D95D39" />
+  <circle cx="168" cy="114" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Brazos relajados · Asistente al costado mide a mitad hombro-codo</text>
+</svg>

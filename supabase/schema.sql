@@ -87,20 +87,54 @@ create table if not exists public.crew_members (
 );
 
 -- =============================================================================
--- RESERVADO FASE 2: Antropometría US Navy + Nutrición (USDA / OFF) + Health Connect
+-- RESERVADO FASE 2: Antropometría US Navy + Fuerza (Gym) + Nutrición (USDA / OFF)
 -- =============================================================================
 create table if not exists public.body_metrics_phase2 (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   measured_at date not null default current_date,
-  sex text check (sex in ('male', 'female')),
+  sex text not null default 'male' check (sex in ('male', 'female')),
   height_cm numeric(5,2) not null,
   weight_kg numeric(5,2) not null,
   neck_cm numeric(5,2) not null,
   waist_cm numeric(5,2) not null,
   hip_cm numeric(5,2),
+  shoulders_cm numeric(5,2),
+  chest_cm numeric(5,2),
+  biceps_cm numeric(5,2),
+  thigh_cm numeric(5,2),
+  calf_cm numeric(5,2),
   estimated_body_fat_pct numeric(4,1),
-  waist_to_height_ratio numeric(4,3)
+  waist_to_height_ratio numeric(4,3) not null default 0,
+  shoulder_to_waist_ratio numeric(4,2),
+  morphological_profile text not null default 'balanced' check (
+    morphological_profile in ('athletic-meso', 'lean-agile', 'power-enduro', 'balanced')
+  ),
+  mode_used text not null default 'solo' check (mode_used in ('solo', 'assisted')),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.gym_exercises (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  name text not null,
+  muscle_group text not null check (muscle_group in ('push', 'pull', 'legs', 'core')),
+  is_compound boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.gym_sets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  exercise_id uuid not null references public.gym_exercises(id) on delete cascade,
+  logged_date date not null default current_date,
+  weight_kg numeric(6,2) not null check (weight_kg > 0),
+  reps int not null check (reps > 0),
+  estimated_1rm_kg numeric(6,1) not null,
+  volume_kg numeric(8,1) not null,
+  is_pr boolean not null default false,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.nutrition_logs_phase2 (
@@ -121,8 +155,14 @@ alter table public.profiles enable row level security;
 alter table public.habits enable row level security;
 alter table public.habit_logs enable row level security;
 alter table public.tasks enable row level security;
+alter table public.body_metrics_phase2 enable row level security;
+alter table public.gym_exercises enable row level security;
+alter table public.gym_sets enable row level security;
 
 create policy "Users manage own profile" on public.profiles for all using (auth.uid() = id);
 create policy "Users manage own habits" on public.habits for all using (auth.uid() = user_id);
 create policy "Users manage own habit logs" on public.habit_logs for all using (auth.uid() = user_id);
 create policy "Users manage own tasks" on public.tasks for all using (auth.uid() = user_id);
+create policy "Users manage own body metrics" on public.body_metrics_phase2 for all using (auth.uid() = user_id);
+create policy "Users manage own gym exercises" on public.gym_exercises for all using (auth.uid() = user_id);
+create policy "Users manage own gym sets" on public.gym_sets for all using (auth.uid() = user_id);

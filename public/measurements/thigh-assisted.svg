@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Guía de medición de muslo medio con asistencia lateral">
+  <title>Muslo medio — Con asistencia (Dúo / Amigo)</title>
+
+  <!-- Technical frame & grid ticks -->
+  <g stroke="#87847A" opacity="0.22" fill="none" stroke-width="1">
+    <path d="M16 28 V16 H28 M292 16 H304 V28 M16 192 V204 H28 M292 204 H304 V192" />
+    <line x1="128" y1="24" x2="128" y2="194" stroke-dasharray="3 5" />
+    <path d="M24 64 H30 M24 90 H28 M24 116 H32 M24 142 H28 M24 168 H30" />
+  </g>
+
+  <text x="36" y="34" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2B7A57">ASISTIDO · SIN FLEXIONAR TRONCO</text>
+
+  <!-- Anatomical silhouette: Pelvis & Upright Relaxed Thighs -->
+  <g stroke="#6E6B63" stroke-width="2.2" fill="#87847A" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M70 46 L182 46 C186 74 182 112 174 152 L170 182 L136 182 L130 98 L122 182 L86 182 L80 152 C72 112 68 74 70 46 Z" />
+  </g>
+
+  <g stroke="#6E6B63" stroke-opacity="0.42" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M132 62 Q154 72 176 68" />
+    <path d="M142 168 Q153 173 164 168" />
+  </g>
+
+  <!-- Midpoint vertical guide + lateral sightline (#2B7A57) -->
+  <g stroke="#2B7A57" fill="none">
+    <line x1="196" y1="66" x2="196" y2="168" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.7" />
+    <line x1="191" y1="66" x2="201" y2="66" stroke-width="1.4" />
+    <line x1="191" y1="168" x2="201" y2="168" stroke-width="1.4" />
+    <line x1="128" y1="116" x2="260" y2="116" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.8" />
+    <path d="M266 116 C272 109 282 109 288 116 C282 123 272 123 266 116 Z" stroke-width="1.7" />
+    <circle cx="277" cy="116" r="2.6" fill="#2B7A57" />
+  </g>
+  <text x="275" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#2B7A57">Asistente</text>
+  <text x="275" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9.5" fill="#2B7A57">Nivel ojos</text>
+
+  <!-- Measuring tape back-loop -->
+  <path d="M132 114 C144 107 166 107 179 114" stroke="#D95D39" stroke-width="3.2" stroke-dasharray="5 4" opacity="0.55" fill="none" />
+
+  <!-- Measuring tape front-loop -->
+  <path d="M131 116 C144 123 166 123 180 116" stroke="#D95D39" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+  <!-- Zero-mark lateral dot -->
+  <circle cx="179" cy="116" r="4.2" fill="#D95D39" />
+  <circle cx="179" cy="116" r="7.5" stroke="#D95D39" stroke-width="1.2" opacity="0.4" fill="none" />
+
+  <!-- Callout labels -->
+  <text x="36" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#87847A">Lectura lateral a nivel de ojos · Cuádriceps relajado de pie</text>
+</svg>
