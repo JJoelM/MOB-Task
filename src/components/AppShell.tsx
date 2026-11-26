@@ -10,6 +10,7 @@ import {
   PanelRightOpen,
   Send,
   Settings2,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { NavSection } from "@/types/mob";
 import { useMob } from "@/context/MobContext";
 import { ATTRIBUTE_META } from "@/lib/templates";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { MobKineticOverlays } from "@/components/MobKineticOverlays";
 import { soundEngine } from "@/lib/sound";
 
 const NAV_ITEMS: { id: NavSection; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -35,9 +37,25 @@ export function AppShell({
   onSelectNav: (nav: NavSection) => void;
   children: React.ReactNode;
 }) {
-  const { state, todayKey, toasts, dismissToast, sendDuoNudge } = useMob();
+  const {
+    state,
+    todayKey,
+    toasts,
+    dismissToast,
+    sendDuoNudge,
+    shieldActive,
+    setRequestedProgressTab,
+  } = useMob();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rightHudOpen, setRightHudOpen] = useState(true);
+
+  const isNearHundred = state.mobCharge >= 95;
+
+  const handleOpenMobHud = () => {
+    soundEngine.playTap();
+    setRequestedProgressTab("hud");
+    onSelectNav("progress");
+  };
 
   const todayHabitsCount = state.habits.length;
   const todayHabitLogsCount = state.habitLogs.filter((l) => l.date === todayKey).length;
@@ -54,29 +72,54 @@ export function AppShell({
       {/* Desktop Left Sidebar */}
       <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:justify-between border-r border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-5 sticky top-0 h-dvh">
         <div>
-          <div className="flex items-center justify-between px-2 mb-7">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[var(--text-primary)] text-[var(--bg-canvas)] flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center justify-between gap-2 px-2 mb-7">
+            <button
+              type="button"
+              onClick={handleOpenMobHud}
+              aria-label={`MOB ${state.mobCharge}% — Ver medidor en Progreso`}
+              className="flex items-center gap-2.5 text-left rounded-xl p-1 -ml-1 hover:bg-[var(--bg-muted)]/70 transition-colors cursor-pointer min-w-0"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[var(--text-primary)] text-[var(--bg-canvas)] flex items-center justify-center font-bold text-sm shrink-0">
                 M
               </div>
-              <div>
-                <span
-                  className="font-bold text-base tracking-tight block leading-none"
-                  style={{ fontFamily: "var(--font-display), sans-serif" }}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`font-bold text-base tracking-tight leading-none tabular-nums inline-flex items-baseline gap-1 ${
+                      isNearHundred
+                        ? "mob-charge-near-100 px-1.5 py-0.5 rounded-md border"
+                        : ""
+                    }`}
+                    style={{ fontFamily: "var(--font-display), sans-serif" }}
+                  >
+                    <span className="text-[var(--text-primary)]">MOB</span>
+                    <span className="text-[var(--accent-action)]">
+                      {state.mobCharge}%
+                    </span>
+                  </span>
+                </div>
+                <div
+                  aria-hidden="true"
+                  className="mt-1.5 h-1 w-28 rounded-full bg-[var(--bg-muted)] overflow-hidden"
                 >
-                  MOB
-                </span>
-                <span className="text-[11px] text-[var(--text-tertiary)]">
+                  <div
+                    className="h-full w-full rounded-full bg-[var(--accent-action)] origin-left transition-transform duration-300"
+                    style={{
+                      transform: `scaleX(${Math.max(0.03, state.mobCharge / 100)})`,
+                    }}
+                  />
+                </div>
+                <span className="text-[11px] text-[var(--text-tertiary)] block mt-1 truncate">
                   Hola, {state.userName || "Jugador"}
                 </span>
               </div>
-            </div>
+            </button>
 
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
               aria-label="Abrir ajustes"
-              className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer shrink-0"
             >
               <Settings2 className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -125,12 +168,14 @@ export function AppShell({
           </nav>
         </div>
 
-        {/* Compact Momentum Pill at Sidebar Bottom */}
+        {/* Compact Consistency Momentum Pill at Sidebar Bottom */}
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-canvas)] p-3.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-[var(--text-secondary)]">Inercia</span>
-            <span className="font-bold tabular-nums text-[var(--accent-sage)]">
-              {state.momentum}%
+          <div className="flex items-center justify-between text-xs gap-1">
+            <span className="font-medium text-[var(--text-secondary)] tabular-nums">
+              Inercia estable ·{" "}
+              <strong className="font-bold text-[var(--accent-sage)]">
+                {state.momentum}%
+              </strong>
             </span>
           </div>
           <div className="mt-2 h-2 rounded-full bg-[var(--bg-muted)] overflow-hidden">
@@ -141,6 +186,12 @@ export function AppShell({
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             />
           </div>
+          {shieldActive && (
+            <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--accent-sage-soft)] text-[var(--accent-sage)] text-[10px] font-semibold">
+              <ShieldCheck className="w-3 h-3 shrink-0" aria-hidden="true" />
+              <span>Protegida 24h por Zona 100%</span>
+            </div>
+          )}
           <p className="text-[11px] text-[var(--text-tertiary)] mt-1.5">
             No cae a cero: cada Bronce suma impulso.
           </p>
@@ -149,27 +200,54 @@ export function AppShell({
 
       {/* Mobile Compact Header (<10% dvh, single row per modern-web-guidance) */}
       <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 h-14 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]/92 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--text-primary)] text-[var(--bg-canvas)] flex items-center justify-center font-bold text-xs">
+        <button
+          type="button"
+          onClick={handleOpenMobHud}
+          aria-label={`MOB ${state.mobCharge}% — Ir a Progreso`}
+          className="flex items-center gap-2 text-left rounded-xl py-1 pr-1.5 cursor-pointer"
+        >
+          <div className="w-7 h-7 rounded-lg bg-[var(--text-primary)] text-[var(--bg-canvas)] flex items-center justify-center font-bold text-xs shrink-0">
             M
           </div>
-          <span
-            className="font-bold text-base tracking-tight"
-            style={{ fontFamily: "var(--font-display), sans-serif" }}
-          >
-            MOB
-          </span>
-        </div>
+          <div>
+            <span
+              className={`font-bold text-base tracking-tight leading-none tabular-nums inline-flex items-baseline gap-1 ${
+                isNearHundred
+                  ? "mob-charge-near-100 px-1.5 py-0.5 rounded-md border text-sm"
+                  : ""
+              }`}
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              <span className="text-[var(--text-primary)]">MOB</span>
+              <span className="text-[var(--accent-action)]">
+                {state.mobCharge}%
+              </span>
+            </span>
+            <div
+              aria-hidden="true"
+              className="mt-1 h-1 w-20 rounded-full bg-[var(--bg-muted)] overflow-hidden"
+            >
+              <div
+                className="h-full w-full rounded-full bg-[var(--accent-action)] origin-left transition-transform duration-300"
+                style={{
+                  transform: `scaleX(${Math.max(0.03, state.mobCharge / 100)})`,
+                }}
+              />
+            </div>
+          </div>
+        </button>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onSelectNav("progress")}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs font-semibold tabular-nums cursor-pointer"
-          >
-            <span className="w-2 h-2 rounded-full bg-[var(--accent-sage)]" />
-            <span>Inercia {state.momentum}%</span>
-          </button>
+          {shieldActive && (
+            <button
+              type="button"
+              onClick={handleOpenMobHud}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--accent-sage-soft)] text-[var(--accent-sage)] border border-[var(--accent-sage)]/25 text-[11px] font-semibold cursor-pointer"
+            >
+              <ShieldCheck className="w-3 h-3 shrink-0" aria-hidden="true" />
+              <span>Escudo 100%</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -228,6 +306,22 @@ export function AppShell({
               <div className="mt-2 text-xs text-[var(--text-secondary)] tabular-nums">
                 {todayHabitLogsCount}/{todayHabitsCount} hábitos · {todayTasksDone}/
                 {todayTasks.length} tareas
+              </div>
+              <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs tabular-nums">
+                  <span className="text-[var(--text-secondary)] font-medium">
+                    Inercia estable ·{" "}
+                    <strong className="font-bold text-[var(--accent-sage)]">
+                      {state.momentum}%
+                    </strong>
+                  </span>
+                </div>
+                {shieldActive && (
+                  <div className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-md bg-[var(--accent-sage-soft)] text-[var(--accent-sage)] text-[11px] font-semibold">
+                    <ShieldCheck className="w-3 h-3 shrink-0" aria-hidden="true" />
+                    <span>Protegida 24h por Zona 100%</span>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -396,6 +490,7 @@ export function AppShell({
         </AnimatePresence>
       </div>
 
+      <MobKineticOverlays />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );

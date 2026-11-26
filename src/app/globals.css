@@ -214,6 +214,46 @@ dialog::backdrop {
 }
 
 /* ==========================================================================
+ * MOB 95%+ Near-100 Subtle Kinetic Terracotta Pulse (WCAG 2.3.1 compliant)
+ * Strictly compositor-only (opacity + transform) & >2s cycle, disabled on
+ * prefers-reduced-motion: reduce.
+ * ========================================================================== */
+.mob-charge-near-100 {
+  position: relative;
+  background-color: var(--accent-action-soft);
+  border-color: var(--accent-action);
+  color: var(--accent-action);
+}
+
+.mob-charge-near-100::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1.5px solid var(--accent-action);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mob-charge-near-100::after {
+    animation: mob-terracotta-pulse 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+@keyframes mob-terracotta-pulse {
+  0%,
+  100% {
+    opacity: 0.14;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scale(1.035);
+  }
+}
+
+/* ==========================================================================
  * Accessible Single-Row Scrollable Tablist (per modern-web-guidance: tabs)
  * ========================================================================== */
 @property --fade-start {

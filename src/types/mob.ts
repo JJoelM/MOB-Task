@@ -203,10 +203,56 @@ export interface ToastNotice {
   tone: "sage" | "action" | "gold";
 }
 
+export type MobEmotionId = "determinacion" | "coraje" | "vinculo" | "claridad";
+
+export interface MobHundredMoment {
+  id: string;
+  emotion: MobEmotionId;
+  title: string; // e.g. "100% Determinación"
+  subtitle: string;
+  triggerAction: string;
+  unlockedAt: string; // ISO
+  shieldExpiresAt: string; // ISO (+24h)
+}
+
+export interface MissionPassedStamp {
+  id: string;
+  headline: string; // e.g. "MISIÓN SUPERADA" | "NUEVO PR DE FUERZA" | "OPERACIÓN DÚO COMPLETADA"
+  itemTitle: string;
+  fromCharge: number;
+  toCharge: number;
+  attribute?: AttributeKey;
+}
+
+export interface DuoOperationStage {
+  id: string;
+  owner: "me" | "partner";
+  title: string;
+  hint: string;
+  completed: boolean;
+}
+
+export interface DuoOperationState {
+  templateId: string;
+  title: string;
+  subtitle: string;
+  durationDays: number;
+  rewardMobCharge: number;
+  stages: DuoOperationStage[];
+  completedCount: number; // total operations finished historically
+}
+
 export interface MobState {
   onboarded: boolean;
   userName: string;
   momentum: number; // 0 - 100 (Inercia no punitiva)
+  mobCharge: number; // 0..99, seeded at 82
+  mobCycleSources: Record<MobEmotionId, number>;
+  mobShieldUntil?: string;
+  mobHundredMoments: MobHundredMoment[];
+  duoOperation: DuoOperationState;
+  closedDayDates: string[]; // YYYY-MM-DD
+  respectSentTodayKeys: string[]; // e.g. `${todayKey}:duo` or `${todayKey}:crew-1`
   attributeXp: Record<AttributeKey, number>;
   habits: Habit[];
   habitLogs: HabitLog[];

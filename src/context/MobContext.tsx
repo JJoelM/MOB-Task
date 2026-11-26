@@ -6,18 +6,23 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
   ActiveMissionSession,
   AttributeKey,
   BodyMeasurementSnapshot,
+  DuoOperationState,
   FlashEvent,
   GymExercise,
   GymMuscleGroup,
   GymSetEntry,
   Habit,
   MedalTier,
+  MissionPassedStamp,
+  MobEmotionId,
+  MobHundredMoment,
   MobState,
   ProgressSubTab,
   TaskItem,
@@ -37,10 +42,19 @@ import {
   isNewPersonalRecord,
   MORPHOLOGICAL_PROFILES,
 } from "@/lib/fitness-domain";
+import {
+  advanceMobCharge,
+  createDuoOperationFromTemplate,
+  isMobShieldActive,
+  MOB_CHARGE_DELTAS,
+  MOB_EMOTION_META,
+} from "@/lib/mob-meter-domain";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { soundEngine } from "@/lib/sound";
 
 const STORAGE_KEY = "mob-app-state-v1";
+const RESPECT_SALUTE_MESSAGE =
+  "¡Buen esfuerzo! El trabajo constante nunca traiciona.";
 
 function createInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -150,6 +164,37 @@ function buildSeedBodySnapshots(): BodyMeasurementSnapshot[] {
   ];
 }
 
+function buildSeedHundredMoments(): MobHundredMoment[] {
+  const nineDaysAgo = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000);
+  const eightDaysAgo = new Date(nineDaysAgo.getTime() + 24 * 60 * 60 * 1000);
+  return [
+    {
+      id: "seed-mob100-1",
+      emotion: "determinacion",
+      title: MOB_EMOTION_META.determinacion.title,
+      subtitle: MOB_EMOTION_META.determinacion.subtitle,
+      triggerAction: "Misión Principal + racha de piso mínimo",
+      unlockedAt: nineDaysAgo.toISOString(),
+      shieldExpiresAt: eightDaysAgo.toISOString(),
+    },
+  ];
+}
+
+function buildSeedDuoOperation(): DuoOperationState {
+  const base = createDuoOperationFromTemplate("op-doble-turno", 1);
+  let markedPartnerStage = false;
+  return {
+    ...base,
+    stages: base.stages.map((stage) => {
+      if (!markedPartnerStage && stage.owner === "partner") {
+        markedPartnerStage = true;
+        return { ...stage, completed: true };
+      }
+      return stage;
+    }),
+  };
+}
+
 function buildInitialState(): MobState {
   const today = getLocalDateKey(0);
   const tomorrow = getLocalDateKey(1);
@@ -158,6 +203,17 @@ function buildInitialState(): MobState {
     onboarded: false,
     userName: "",
     momentum: 48,
+    mobCharge: 82,
+    mobCycleSources: {
+      determinacion: 24,
+      coraje: 18,
+      vinculo: 16,
+      claridad: 24,
+    },
+    mobHundredMoments: buildSeedHundredMoments(),
+    duoOperation: buildSeedDuoOperation(),
+    closedDayDates: [],
+    respectSentTodayKeys: [],
     attributeXp: {
       energia: 135,
       fuerza: 110,
@@ -276,6 +332,11 @@ interface MobContextValue {
   cloudConnected: boolean;
   requestedProgressTab: ProgressSubTab;
   setRequestedProgressTab: (tab: ProgressSubTab) => void;
+  missionStamp: MissionPassedStamp | null;
+  dismissMissionStamp: () => void;
+  activeHundredMoment: MobHundredMoment | null;
+  acknowledgeHundredMoment: () => void;
+  shieldActive: boolean;
   completeOnboarding: (params: {
     userName: string;
     selectedTemplateIds: string[];
@@ -310,6 +371,10 @@ interface MobContextValue {
   simulatePartnerProgress: () => void;
   updatePartnerInfo: (partnerName: string, connected: boolean) => void;
   addCrewFriend: (name: string) => void;
+  toggleDuoOperationStage: (stageId: string) => void;
+  switchDuoOperationTemplate: (templateId: string) => void;
+  sendRespectSalute: (targetKey: string, targetName: string) => void;
+  completeDayDebrief: (tomorrowMissionTitle?: string) => void;
   addBodySnapshot: (
     input: Omit<
       BodyMeasurementSnapshot,
@@ -343,6 +408,12 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
   const [todayKey, setTodayKey] = useState<string>(() => getLocalDateKey(0));
   const [requestedProgressTab, setRequestedProgressTab] =
     useState<ProgressSubTab>("hud");
+  const [missionStamp, setMissionStamp] = useState<MissionPassedStamp | null>(null);
+  const [activeHundredMoment, setActiveHundredMoment] =
+    useState<MobHundredMoment | null>(null);
+
+  const stampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHundredSoundTsRef = useRef<number>(0);
 
   const pushToast = useCallback(
     (title: string, subtitle?: string, tone: ToastNotice["tone"] = "sage") => {
@@ -359,6 +430,38 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const dismissMissionStamp = useCallback(() => {
+    if (stampTimeoutRef.current) {
+      clearTimeout(stampTimeoutRef.current);
+      stampTimeoutRef.current = null;
+    }
+    setMissionStamp(null);
+  }, []);
+
+  const showMissionStamp = useCallback((stamp: MissionPassedStamp) => {
+    if (stampTimeoutRef.current) {
+      clearTimeout(stampTimeoutRef.current);
+    }
+    setMissionStamp(stamp);
+    stampTimeoutRef.current = setTimeout(() => {
+      setMissionStamp(null);
+      stampTimeoutRef.current = null;
+    }, 2400);
+  }, []);
+
+  const acknowledgeHundredMoment = useCallback(() => {
+    soundEngine.playTap();
+    setActiveHundredMoment(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (stampTimeoutRef.current) {
+        clearTimeout(stampTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Hydrate from localStorage on client mount
   useEffect(() => {
     setTodayKey(getLocalDateKey(0));
@@ -369,6 +472,43 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
         setState((prev) => ({
           ...prev,
           ...parsed,
+          mobCharge:
+            typeof parsed.mobCharge === "number" &&
+            Number.isFinite(parsed.mobCharge)
+              ? Math.max(0, Math.min(99, Math.round(parsed.mobCharge)))
+              : prev.mobCharge,
+          mobCycleSources:
+            parsed.mobCycleSources && typeof parsed.mobCycleSources === "object"
+              ? {
+                  determinacion:
+                    Number(parsed.mobCycleSources.determinacion) || 0,
+                  coraje: Number(parsed.mobCycleSources.coraje) || 0,
+                  vinculo: Number(parsed.mobCycleSources.vinculo) || 0,
+                  claridad: Number(parsed.mobCycleSources.claridad) || 0,
+                }
+              : prev.mobCycleSources,
+          mobShieldUntil:
+            typeof parsed.mobShieldUntil === "string"
+              ? parsed.mobShieldUntil
+              : prev.mobShieldUntil,
+          mobHundredMoments: Array.isArray(parsed.mobHundredMoments)
+            ? parsed.mobHundredMoments
+            : prev.mobHundredMoments,
+          duoOperation:
+            parsed.duoOperation &&
+            typeof parsed.duoOperation === "object" &&
+            Array.isArray(parsed.duoOperation.stages)
+              ? {
+                  ...prev.duoOperation,
+                  ...parsed.duoOperation,
+                }
+              : prev.duoOperation,
+          closedDayDates: Array.isArray(parsed.closedDayDates)
+            ? parsed.closedDayDates
+            : prev.closedDayDates,
+          respectSentTodayKeys: Array.isArray(parsed.respectSentTodayKeys)
+            ? parsed.respectSentTodayKeys
+            : prev.respectSentTodayKeys,
           bodySnapshots: Array.isArray(parsed.bodySnapshots)
             ? parsed.bodySnapshots
             : prev.bodySnapshots,
@@ -456,7 +596,7 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
                     ...prev.duo.nudges,
                   ].slice(0, 8),
                 },
-              }));
+              }))
               pushToast(`Toque de ${state.duo.partnerName}`, String(payload.label), "action");
             })
             .subscribe()
@@ -478,6 +618,7 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
         beatProcrastination?: boolean;
         duoAction?: boolean;
         bodyCheckin?: boolean;
+        mobHundredDetonation?: boolean;
       }
     ): MobState => {
       const unlocked = { ...draft.unlockedAchievementIds };
@@ -519,12 +660,20 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       if (draft.bodySnapshots.length >= 4 || extraFlags?.bodyCheckin) {
         grant("ach-body-checkin");
       }
+      if (
+        draft.mobHundredMoments.length >= 2 ||
+        extraFlags?.mobHundredDetonation
+      ) {
+        grant("ach-mob-100");
+      }
 
       if (newlyUnlocked.length > 0) {
         const firstAch = ACHIEVEMENTS_CATALOG.find((a) => a.id === newlyUnlocked[0]);
         if (firstAch) {
           setTimeout(() => {
-            soundEngine.playMedal("gold");
+            if (!extraFlags?.mobHundredDetonation) {
+              soundEngine.playMedal("gold");
+            }
             pushToast(`Logro desbloqueado: ${firstAch.title}`, firstAch.description, "gold");
           }, 180);
         }
@@ -533,6 +682,88 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       return { ...draft, unlockedAchievementIds: unlocked };
     },
     [pushToast]
+  );
+
+  // Unified MOB 0% -> 100% progression + detonation side-effects + optional MissionPassedStamp
+  const applyMobChargeAndEffects = useCallback(
+    (
+      draft: MobState,
+      params: {
+        delta: number;
+        emotionSource: MobEmotionId;
+        triggerAction: string;
+        stampCandidate?: Omit<MissionPassedStamp, "id" | "fromCharge" | "toCharge">;
+      }
+    ): { updatedDraft: MobState; reachedHundred: boolean } => {
+      const fromCharge = draft.mobCharge;
+      const chargeRes = advanceMobCharge({
+        currentCharge: draft.mobCharge,
+        cycleSources: draft.mobCycleSources,
+        delta: params.delta,
+        emotionSource: params.emotionSource,
+        triggerAction: params.triggerAction,
+      });
+
+      if (chargeRes.reachedHundred && chargeRes.moment) {
+        const capturedMoment = chargeRes.moment;
+        setTimeout(() => {
+          const now = Date.now();
+          if (now - lastHundredSoundTsRef.current > 150) {
+            lastHundredSoundTsRef.current = now;
+            soundEngine.playMobHundredSequence();
+          }
+          dismissMissionStamp();
+          setActiveHundredMoment(capturedMoment);
+        }, 0);
+
+        return {
+          reachedHundred: true,
+          updatedDraft: {
+            ...draft,
+            mobCharge: chargeRes.nextCharge,
+            mobCycleSources: chargeRes.nextSources,
+            mobShieldUntil: chargeRes.nextShieldUntil,
+            mobHundredMoments: [capturedMoment, ...draft.mobHundredMoments],
+            duo: {
+              ...draft.duo,
+              partnerMomentum: Math.min(100, draft.duo.partnerMomentum + 5),
+            },
+            crewChallenge: {
+              ...draft.crewChallenge,
+              currentMedals: Math.min(
+                draft.crewChallenge.targetMedals,
+                draft.crewChallenge.currentMedals + 2
+              ),
+            },
+          },
+        };
+      }
+
+      if (params.stampCandidate) {
+        const candidate = params.stampCandidate;
+        const nextCharge = chargeRes.nextCharge;
+        setTimeout(() => {
+          showMissionStamp({
+            id: `stamp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            headline: candidate.headline,
+            itemTitle: candidate.itemTitle,
+            fromCharge,
+            toCharge: nextCharge,
+            attribute: candidate.attribute,
+          });
+        }, 0);
+      }
+
+      return {
+        reachedHundred: false,
+        updatedDraft: {
+          ...draft,
+          mobCharge: chargeRes.nextCharge,
+          mobCycleSources: chargeRes.nextSources,
+        },
+      };
+    },
+    [dismissMissionStamp, showMissionStamp]
   );
 
   const completeOnboarding = useCallback(
@@ -612,9 +843,18 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
           silver: 14,
           gold: 22,
         };
+        const tierMobCharge: Record<MedalTier, number> = {
+          bronze: MOB_CHARGE_DELTAS.HABIT_BRONZE,
+          silver: MOB_CHARGE_DELTAS.HABIT_SILVER,
+          gold: MOB_CHARGE_DELTAS.HABIT_GOLD,
+        };
+
         const prevPoints = existing ? tierPoints[existing.tier] : 0;
         const deltaXp = Math.max(2, tierPoints[tier] - prevPoints);
         const momentumGain = existing ? 2 : tier === "gold" ? 6 : tier === "silver" ? 5 : 4;
+        const chargeDelta = existing
+          ? Math.max(0, tierMobCharge[tier] - tierMobCharge[existing.tier])
+          : tierMobCharge[tier];
 
         const nextLog = {
           id: existing?.id || `log-${Date.now()}`,
@@ -636,7 +876,16 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
           nextXp[habit.secondaryAttribute] += Math.round(deltaXp * 0.5);
         }
 
-        const nextDraft: MobState = {
+        const emotionSource: MobEmotionId =
+          habit.isSharedDuo && prev.duo.connected
+            ? "vinculo"
+            : habit.primaryAttribute === "enfoque"
+            ? "claridad"
+            : habit.primaryAttribute === "fuerza"
+            ? "coraje"
+            : "determinacion";
+
+        const baseDraft: MobState = {
           ...prev,
           momentum: Math.min(100, prev.momentum + momentumGain),
           attributeXp: nextXp,
@@ -652,12 +901,24 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
               },
         };
 
-        return checkAndUnlockAchievements(nextDraft, {
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: chargeDelta,
+            emotionSource,
+            triggerAction: `${habit.title} (${
+              tier === "gold" ? "Oro" : tier === "silver" ? "Plata" : "Bronce"
+            })`,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
           duoAction: habit.isSharedDuo && prev.duo.connected,
+          mobHundredDetonation: reachedHundred,
         });
       });
     },
-    [todayKey, checkAndUnlockAchievements]
+    [todayKey, applyMobChargeAndEffects, checkAndUnlockAchievements]
   );
 
   const clearHabitLog = useCallback(
@@ -665,7 +926,9 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       soundEngine.playTap();
       setState((prev) => ({
         ...prev,
-        momentum: Math.max(20, prev.momentum - 3),
+        momentum: isMobShieldActive(prev.mobShieldUntil)
+          ? prev.momentum
+          : Math.max(20, prev.momentum - 3),
         habitLogs: prev.habitLogs.filter(
           (l) => !(l.habitId === habitId && l.date === dateKey)
         ),
@@ -779,22 +1042,62 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
             : t
         );
 
-        const nextDraft: MobState = {
+        const shielded = isMobShieldActive(prev.mobShieldUntil);
+
+        const baseDraft: MobState = {
           ...prev,
           momentum: nextCompleted
             ? Math.min(100, prev.momentum + (target.isMainMission ? 7 : 4))
+            : shielded
+            ? prev.momentum
             : Math.max(20, prev.momentum - 3),
           attributeXp: nextXp,
           tasks: nextTasks,
         };
 
-        return checkAndUnlockAchievements(nextDraft, {
-          beatProcrastination: nextCompleted && (target.postponeCount > 0 || Boolean(tierOverride === "bronze")),
-          duoAction: nextCompleted && Boolean(target.duoSosActive),
+        if (!nextCompleted) {
+          return baseDraft;
+        }
+
+        const emotionSource: MobEmotionId = target.duoSosActive
+          ? "vinculo"
+          : target.postponeCount > 0 || tierOverride === "bronze"
+          ? "coraje"
+          : target.isMainMission || target.primaryAttribute === "enfoque"
+          ? "claridad"
+          : "determinacion";
+
+        const chargeDelta = target.isMainMission
+          ? MOB_CHARGE_DELTAS.MAIN_MISSION
+          : MOB_CHARGE_DELTAS.SECONDARY_TASK;
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: chargeDelta,
+            emotionSource,
+            triggerAction: target.isMainMission
+              ? `Misión Principal: ${target.title}`
+              : target.title,
+            stampCandidate: target.isMainMission
+              ? {
+                  headline: "MISIÓN PRINCIPAL SUPERADA",
+                  itemTitle: target.title,
+                  attribute: target.primaryAttribute,
+                }
+              : undefined,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          beatProcrastination:
+            target.postponeCount > 0 || Boolean(tierOverride === "bronze"),
+          duoAction: Boolean(target.duoSosActive),
+          mobHundredDetonation: reachedHundred,
         });
       });
     },
-    [checkAndUnlockAchievements]
+    [applyMobChargeAndEffects, checkAndUnlockAchievements]
   );
 
   const toggleTaskMainMission = useCallback(
@@ -849,17 +1152,34 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       if (steps.length === 0) return;
 
       setState((prev) => {
-        const nextDraft: MobState = {
+        const target = prev.tasks.find((t) => t.id === taskId);
+        if (!target) return prev;
+        const firstSplit = target.microSteps.length === 0;
+
+        const baseDraft: MobState = {
           ...prev,
           tasks: prev.tasks.map((t) =>
             t.id === taskId ? { ...t, microSteps: steps } : t
           ),
         };
-        return checkAndUnlockAchievements(nextDraft, { beatProcrastination: true });
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: firstSplit ? MOB_CHARGE_DELTAS.ANTI_PROCRASTINATION : 0,
+            emotionSource: "coraje",
+            triggerAction: `Fricción vencida: ${target.title}`,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          beatProcrastination: true,
+          mobHundredDetonation: reachedHundred,
+        });
       });
       pushToast("Dividida en micro-pasos", "Completa solo el primero para romper la inercia.");
     },
-    [checkAndUnlockAchievements, pushToast]
+    [applyMobChargeAndEffects, checkAndUnlockAchievements, pushToast]
   );
 
   const toggleMicroStep = useCallback(
@@ -885,8 +1205,10 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       soundEngine.playTap();
       setState((prev) => ({
         ...prev,
-        // Gentle SDT momentum adjustment: tiny -1 nudge, never punitive reset
-        momentum: Math.max(25, prev.momentum - 1),
+        // Gentle SDT momentum adjustment: tiny -1 nudge, protected when MOB Shield is active
+        momentum: isMobShieldActive(prev.mobShieldUntil)
+          ? prev.momentum
+          : Math.max(25, prev.momentum - 1),
         tasks: prev.tasks.map((t) =>
           t.id === taskId
             ? {
@@ -950,18 +1272,53 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
     [state.tasks, state.duo.partnerName, checkAndUnlockAchievements, pushToast]
   );
 
+  const completeFlashEvent = useCallback(
+    (event: FlashEvent) => {
+      soundEngine.playMedal("silver");
+      setState((prev) => {
+        const alreadyDone = prev.completedFlashDates.includes(todayKey);
+        const nextXp = { ...prev.attributeXp };
+        nextXp[event.attribute] += 12;
+
+        const baseDraft: MobState = {
+          ...prev,
+          momentum: Math.min(100, prev.momentum + event.momentumBoost),
+          attributeXp: nextXp,
+          completedFlashDates: alreadyDone
+            ? prev.completedFlashDates
+            : [...prev.completedFlashDates, todayKey],
+        };
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: alreadyDone ? 0 : MOB_CHARGE_DELTAS.FLASH_EVENT,
+            emotionSource: "coraje",
+            triggerAction: event.title,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          beatProcrastination: true,
+          mobHundredDetonation: reachedHundred,
+        });
+      });
+      pushToast("¡Encuentro Relámpago completado!", `+${event.momentumBoost}% de Inercia.`);
+    },
+    [todayKey, applyMobChargeAndEffects, checkAndUnlockAchievements, pushToast]
+  );
+
   const startMissionSession = useCallback((session: ActiveMissionSession) => {
     soundEngine.playTap();
     setActiveMission(session);
   }, []);
 
   const cancelMissionSession = useCallback(() => {
-    soundEngine.toggleAmbientFocus(false);
+    soundEngine.playTap();
     setActiveMission(null);
   }, []);
 
   const finishMissionSession = useCallback(() => {
-    soundEngine.toggleAmbientFocus(false);
     if (!activeMission) return;
 
     if (activeMission.type === "habit") {
@@ -974,47 +1331,18 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
     } else if (activeMission.type === "flash") {
       const flash = FLASH_EVENTS_POOL.find((f) => f.id === activeMission.itemId);
       if (flash) {
-        soundEngine.playMedal("silver");
-        setState((prev) => {
-          const nextXp = { ...prev.attributeXp };
-          nextXp[flash.attribute] += 12;
-          return checkAndUnlockAchievements(
-            {
-              ...prev,
-              momentum: Math.min(100, prev.momentum + flash.momentumBoost),
-              attributeXp: nextXp,
-              completedFlashDates: [...prev.completedFlashDates, todayKey],
-            },
-            { beatProcrastination: true }
-          );
-        });
-        pushToast("¡Evento Relámpago superado!", `+${flash.momentumBoost}% de Inercia directa.`);
+        completeFlashEvent(flash);
       }
     }
 
     setActiveMission(null);
-  }, [activeMission, logHabitTier, state.tasks, toggleTaskComplete, checkAndUnlockAchievements, todayKey, pushToast]);
-
-  const completeFlashEvent = useCallback(
-    (event: FlashEvent) => {
-      soundEngine.playMedal("silver");
-      setState((prev) => {
-        const nextXp = { ...prev.attributeXp };
-        nextXp[event.attribute] += 12;
-        return checkAndUnlockAchievements(
-          {
-            ...prev,
-            momentum: Math.min(100, prev.momentum + event.momentumBoost),
-            attributeXp: nextXp,
-            completedFlashDates: [...prev.completedFlashDates, todayKey],
-          },
-          { beatProcrastination: true }
-        );
-      });
-      pushToast("¡Encuentro Relámpago completado!", `+${event.momentumBoost}% de Inercia.`);
-    },
-    [todayKey, checkAndUnlockAchievements, pushToast]
-  );
+  }, [
+    activeMission,
+    logHabitTier,
+    state.tasks,
+    toggleTaskComplete,
+    completeFlashEvent,
+  ]);
 
   const dismissFlashEventToday = useCallback(() => {
     soundEngine.playTap();
@@ -1149,6 +1477,299 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
     [pushToast]
   );
 
+  const toggleDuoOperationStage = useCallback(
+    (stageId: string) => {
+      setState((prev) => {
+        const targetStage = prev.duoOperation.stages.find(
+          (s) => s.id === stageId
+        );
+        if (!targetStage) return prev;
+
+        const wasAllCompleted = prev.duoOperation.stages.every(
+          (s) => s.completed
+        );
+        const nextCompleted = !targetStage.completed;
+        const updatedStages = prev.duoOperation.stages.map((s) =>
+          s.id === stageId ? { ...s, completed: nextCompleted } : s
+        );
+        const nowAllCompleted =
+          nextCompleted && updatedStages.every((s) => s.completed);
+
+        if (!nextCompleted) {
+          soundEngine.playTap();
+          return {
+            ...prev,
+            duoOperation: {
+              ...prev.duoOperation,
+              stages: updatedStages,
+              completedCount: wasAllCompleted
+                ? Math.max(0, prev.duoOperation.completedCount - 1)
+                : prev.duoOperation.completedCount,
+            },
+          };
+        }
+
+        soundEngine.playMedal(nowAllCompleted ? "gold" : "silver");
+
+        const nextXp = { ...prev.attributeXp };
+        nextXp.energia += nowAllCompleted ? 10 : 6;
+        if (nowAllCompleted) {
+          nextXp.disciplina += 10;
+        }
+
+        const baseDraft: MobState = {
+          ...prev,
+          momentum: Math.min(
+            100,
+            prev.momentum + (nowAllCompleted ? 6 : 3)
+          ),
+          attributeXp: nextXp,
+          duo: {
+            ...prev.duo,
+            partnerMomentum: nowAllCompleted
+              ? Math.min(100, prev.duo.partnerMomentum + 5)
+              : prev.duo.partnerMomentum,
+            duoSynergyDays: nowAllCompleted
+              ? prev.duo.duoSynergyDays + 1
+              : prev.duo.duoSynergyDays,
+          },
+          duoOperation: {
+            ...prev.duoOperation,
+            stages: updatedStages,
+            completedCount: nowAllCompleted
+              ? prev.duoOperation.completedCount + 1
+              : prev.duoOperation.completedCount,
+          },
+        };
+
+        const chargeDelta = nowAllCompleted
+          ? MOB_CHARGE_DELTAS.DUO_STAGE + prev.duoOperation.rewardMobCharge
+          : MOB_CHARGE_DELTAS.DUO_STAGE;
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: chargeDelta,
+            emotionSource: "vinculo",
+            triggerAction: nowAllCompleted
+              ? `Operación Dúo completada: ${prev.duoOperation.title}`
+              : `Etapa Dúo: ${targetStage.title}`,
+            stampCandidate: nowAllCompleted
+              ? {
+                  headline: "OPERACIÓN DÚO COMPLETADA",
+                  itemTitle: prev.duoOperation.title,
+                  attribute: "energia",
+                }
+              : undefined,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          duoAction: true,
+          mobHundredDetonation: reachedHundred,
+        });
+      });
+    },
+    [applyMobChargeAndEffects, checkAndUnlockAchievements]
+  );
+
+  const switchDuoOperationTemplate = useCallback(
+    (templateId: string) => {
+      soundEngine.playTap();
+      setState((prev) => ({
+        ...prev,
+        duoOperation: createDuoOperationFromTemplate(
+          templateId,
+          prev.duoOperation.completedCount
+        ),
+      }));
+      pushToast(
+        "Operación Dúo actualizada",
+        "Nuevas etapas listas para coordinar en equipo.",
+        "sage"
+      );
+    },
+    [pushToast]
+  );
+
+  const sendRespectSalute = useCallback(
+    (targetKey: string, targetName: string) => {
+      const normalizedTarget = targetKey.startsWith(`${todayKey}:`)
+        ? targetKey.slice(todayKey.length + 1)
+        : targetKey;
+      const saluteKey = `${todayKey}:${normalizedTarget}`;
+
+      if (state.respectSentTodayKeys.includes(saluteKey)) {
+        soundEngine.playTap();
+        pushToast(
+          `Ya saludaste a ${targetName} hoy`,
+          "Mañana podrás enviarle un nuevo pulso de respeto.",
+          "sage"
+        );
+        return;
+      }
+
+      soundEngine.playMedal("bronze");
+
+      setState((prev) => {
+        if (prev.respectSentTodayKeys.includes(saluteKey)) {
+          return prev;
+        }
+
+        const isDuoTarget = normalizedTarget === "duo";
+        const nextDuo = isDuoTarget
+          ? {
+              ...prev.duo,
+              partnerMomentum: Math.min(100, prev.duo.partnerMomentum + 2),
+              nudges: [
+                {
+                  id: `nudge-respect-${Date.now()}`,
+                  from: "me" as const,
+                  label: RESPECT_SALUTE_MESSAGE,
+                  timestamp: new Date().toISOString(),
+                },
+                ...prev.duo.nudges,
+              ].slice(0, 8),
+            }
+          : prev.duo;
+
+        const nextCrewMembers = isDuoTarget
+          ? prev.crewMembers
+          : prev.crewMembers.map((member) =>
+              member.id === normalizedTarget
+                ? {
+                    ...member,
+                    momentum: Math.min(100, member.momentum + 2),
+                    statusLabel: RESPECT_SALUTE_MESSAGE,
+                  }
+                : member
+            );
+
+        const baseDraft: MobState = {
+          ...prev,
+          momentum: Math.min(100, prev.momentum + 1),
+          respectSentTodayKeys: [...prev.respectSentTodayKeys, saluteKey],
+          duo: nextDuo,
+          crewMembers: nextCrewMembers,
+        };
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: MOB_CHARGE_DELTAS.RESPECT_SALUTE,
+            emotionSource: "vinculo",
+            triggerAction: `Respeto enviado a ${targetName}`,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          duoAction: isDuoTarget,
+          mobHundredDetonation: reachedHundred,
+        });
+      });
+
+      if (normalizedTarget === "duo") {
+        if (typeof BroadcastChannel !== "undefined") {
+          const bc = new BroadcastChannel("mob-duo-live");
+          bc.postMessage({ type: "DUO_NUDGE", label: RESPECT_SALUTE_MESSAGE });
+          bc.close();
+        }
+        if (supabase && state.duo.inviteCode) {
+          supabase.channel(`duo-${state.duo.inviteCode}`).send({
+            type: "broadcast",
+            event: "nudge",
+            payload: { label: RESPECT_SALUTE_MESSAGE },
+          });
+        }
+      }
+
+      pushToast(`Respeto enviado a ${targetName}`, RESPECT_SALUTE_MESSAGE, "sage");
+    },
+    [
+      todayKey,
+      state.respectSentTodayKeys,
+      state.duo.inviteCode,
+      applyMobChargeAndEffects,
+      checkAndUnlockAchievements,
+      pushToast,
+    ]
+  );
+
+  const completeDayDebrief = useCallback(
+    (tomorrowMissionTitle?: string) => {
+      soundEngine.playMissionBell();
+      const cleanTomorrowTitle = tomorrowMissionTitle?.trim() || "";
+      const tomorrowKey = getLocalDateKey(1);
+
+      setState((prev) => {
+        const alreadyClosed = prev.closedDayDates.includes(todayKey);
+        const nextClosedDates = alreadyClosed
+          ? prev.closedDayDates
+          : [...prev.closedDayDates, todayKey];
+
+        let nextTasks = prev.tasks;
+        if (cleanTomorrowTitle) {
+          const tomorrowMainCount = prev.tasks.filter(
+            (t) =>
+              t.scheduledDate === tomorrowKey &&
+              t.isMainMission &&
+              !t.completed
+          ).length;
+
+          const createdTomorrowTask: TaskItem = {
+            id: `task-debrief-${Date.now()}`,
+            title: cleanTomorrowTitle,
+            scheduledDate: tomorrowKey,
+            timeOfDay: "morning",
+            isMainMission: tomorrowMainCount < 3,
+            primaryAttribute: "enfoque",
+            completed: false,
+            postponeCount: 0,
+            microSteps: [],
+          };
+          nextTasks = [createdTomorrowTask, ...prev.tasks];
+        }
+
+        const nextXp = { ...prev.attributeXp };
+        if (!alreadyClosed) {
+          nextXp.disciplina += 8;
+        }
+
+        const baseDraft: MobState = {
+          ...prev,
+          momentum: alreadyClosed
+            ? prev.momentum
+            : Math.min(100, prev.momentum + 3),
+          attributeXp: nextXp,
+          tasks: nextTasks,
+          closedDayDates: nextClosedDates,
+        };
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: alreadyClosed ? 0 : MOB_CHARGE_DELTAS.DAY_DEBRIEF,
+            emotionSource: "claridad",
+            triggerAction: "Cierre consciente del día",
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          mobHundredDetonation: reachedHundred,
+        });
+      });
+
+      pushToast(
+        "Día cerrado en calma",
+        cleanTomorrowTitle
+          ? "Tu prioridad #1 de mañana ya quedó lista."
+          : "Buen cierre. Descansa hoy y sigue sumando mañana.",
+        "sage"
+      );
+    },
+    [todayKey, applyMobChargeAndEffects, checkAndUnlockAchievements, pushToast]
+  );
+
   const addBodySnapshot = useCallback(
     (
       input: Omit<
@@ -1169,13 +1790,26 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
         const nextSnapshots = [...prev.bodySnapshots, snapshot].sort((a, b) =>
           a.date.localeCompare(b.date)
         );
-        const nextDraft: MobState = {
+        const baseDraft: MobState = {
           ...prev,
           momentum: Math.min(100, prev.momentum + 4),
           attributeXp: nextXp,
           bodySnapshots: nextSnapshots,
         };
-        return checkAndUnlockAchievements(nextDraft, { bodyCheckin: true });
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: 6,
+            emotionSource: "determinacion",
+            triggerAction: "Control corporal consciente",
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          bodyCheckin: true,
+          mobHundredDetonation: reachedHundred,
+        });
       });
       pushToast(
         "Control corporal guardado",
@@ -1184,7 +1818,7 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       );
       return snapshot;
     },
-    [checkAndUnlockAchievements, pushToast]
+    [applyMobChargeAndEffects, checkAndUnlockAchievements, pushToast]
   );
 
   const deleteBodySnapshot = useCallback((id: string) => {
@@ -1253,11 +1887,14 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
         const committedEntry: GymSetEntry =
           verifiedPr === entry.isPr ? entry : { ...entry, isPr: verifiedPr };
 
+        const exerciseObj = prev.gymExercises.find((e) => e.id === exerciseId);
+        const exerciseLabel = exerciseObj?.name || "Ejercicio de fuerza";
+
         const nextXp = { ...prev.attributeXp };
         nextXp.fuerza += committedEntry.isPr ? 14 : 6;
         nextXp.disciplina += 3;
 
-        const nextDraft: MobState = {
+        const baseDraft: MobState = {
           ...prev,
           momentum: Math.min(
             100,
@@ -1266,7 +1903,30 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
           attributeXp: nextXp,
           gymSets: [...prev.gymSets, committedEntry],
         };
-        return checkAndUnlockAchievements(nextDraft);
+
+        const { updatedDraft, reachedHundred } = applyMobChargeAndEffects(
+          baseDraft,
+          {
+            delta: committedEntry.isPr
+              ? MOB_CHARGE_DELTAS.GYM_PR
+              : MOB_CHARGE_DELTAS.GYM_SET,
+            emotionSource: committedEntry.isPr ? "coraje" : "determinacion",
+            triggerAction: committedEntry.isPr
+              ? `Nuevo PR en ${exerciseLabel} (${cleanWeight} kg × ${cleanReps})`
+              : `Serie de ${exerciseLabel}`,
+            stampCandidate: committedEntry.isPr
+              ? {
+                  headline: "NUEVO PR DE FUERZA",
+                  itemTitle: `${exerciseLabel} · ${cleanWeight} kg × ${cleanReps}`,
+                  attribute: "fuerza",
+                }
+              : undefined,
+          }
+        );
+
+        return checkAndUnlockAchievements(updatedDraft, {
+          mobHundredDetonation: reachedHundred,
+        });
       });
 
       if (isPr) {
@@ -1279,7 +1939,13 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
 
       return entry;
     },
-    [todayKey, state.gymSets, checkAndUnlockAchievements, pushToast]
+    [
+      todayKey,
+      state.gymSets,
+      applyMobChargeAndEffects,
+      checkAndUnlockAchievements,
+      pushToast,
+    ]
   );
 
   const deleteGymSet = useCallback((id: string) => {
@@ -1298,6 +1964,11 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       return { ...prev, soundEnabled: next };
     });
   }, []);
+
+  const shieldActive = useMemo(
+    () => isMobShieldActive(state.mobShieldUntil),
+    [state.mobShieldUntil]
+  );
 
   const todayFlashEvent = useMemo(() => {
     if (
@@ -1323,6 +1994,11 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       cloudConnected: isSupabaseConfigured,
       requestedProgressTab,
       setRequestedProgressTab,
+      missionStamp,
+      dismissMissionStamp,
+      activeHundredMoment,
+      acknowledgeHundredMoment,
+      shieldActive,
       completeOnboarding,
       logHabitTier,
       clearHabitLog,
@@ -1345,6 +2021,10 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       simulatePartnerProgress,
       updatePartnerInfo,
       addCrewFriend,
+      toggleDuoOperationStage,
+      switchDuoOperationTemplate,
+      sendRespectSalute,
+      completeDayDebrief,
       addBodySnapshot,
       deleteBodySnapshot,
       addGymExercise,
@@ -1361,6 +2041,11 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       toasts,
       todayFlashEvent,
       requestedProgressTab,
+      missionStamp,
+      dismissMissionStamp,
+      activeHundredMoment,
+      acknowledgeHundredMoment,
+      shieldActive,
       completeOnboarding,
       logHabitTier,
       clearHabitLog,
@@ -1383,6 +2068,10 @@ export function MobProvider({ children }: { children: React.ReactNode }) {
       simulatePartnerProgress,
       updatePartnerInfo,
       addCrewFriend,
+      toggleDuoOperationStage,
+      switchDuoOperationTemplate,
+      sendRespectSalute,
+      completeDayDebrief,
       addBodySnapshot,
       deleteBodySnapshot,
       addGymExercise,

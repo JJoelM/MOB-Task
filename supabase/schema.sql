@@ -4,11 +4,15 @@
 
 create extension if not exists "pgcrypto";
 
--- 1. Perfiles de usuario (Inercia SDT + 4 Atributos estilo GTA)
+-- 1. Perfiles de usuario (Inercia SDT + Medidor MOB 0->100% + 4 Atributos estilo GTA)
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default 'Jugador',
   momentum_score int not null default 42 check (momentum_score between 0 and 100),
+  mob_charge int not null default 82 check (mob_charge between 0 and 99),
+  mob_cycle_sources jsonb not null default '{"determinacion": 24, "coraje": 18, "vinculo": 16, "claridad": 24}'::jsonb,
+  mob_shield_until timestamptz,
+  mob_hundred_moments jsonb not null default '[]'::jsonb,
   attribute_xp jsonb not null default '{"energia": 120, "fuerza": 100, "enfoque": 110, "disciplina": 105}'::jsonb,
   invite_code text unique not null default upper(substr(encode(gen_random_bytes(4), 'hex'), 1, 6)),
   updated_at timestamptz not null default now()

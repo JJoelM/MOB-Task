@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, Headphones, Pause, Play, Users, X } from "lucide-react";
+import { Check, Pause, Play, Users, X } from "lucide-react";
 import { useMob } from "@/context/MobContext";
 import { ATTRIBUTE_META } from "@/lib/templates";
 import { soundEngine } from "@/lib/sound";
@@ -11,16 +11,21 @@ export function MissionFocusOverlay() {
   const { activeMission, state, finishMissionSession, cancelMissionSession } = useMob();
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [ambientOn, setAmbientOn] = useState(false);
+  const prevSecondsRef = useRef<number | null>(null);
+  const bellPlayedRef = useRef(false);
 
   const totalSeconds = (activeMission?.targetMinutes ?? 5) * 60;
 
   useEffect(() => {
     if (!activeMission) {
-      setAmbientOn(false);
+      prevSecondsRef.current = null;
+      bellPlayedRef.current = false;
       return;
     }
-    setSecondsLeft(activeMission.targetMinutes * 60);
+    const initialSeconds = Math.max(1, activeMission.targetMinutes * 60);
+    prevSecondsRef.current = initialSeconds;
+    bellPlayedRef.current = false;
+    setSecondsLeft(initialSeconds);
     setPaused(false);
   }, [activeMission]);
 
@@ -32,11 +37,19 @@ export function MissionFocusOverlay() {
     return () => clearInterval(timer);
   }, [activeMission, paused]);
 
-  const toggleAmbient = () => {
-    const next = !ambientOn;
-    setAmbientOn(next);
-    soundEngine.toggleAmbientFocus(next);
-  };
+  // Trigger completion bell strictly once when countdown transitions from 1 -> 0
+  useEffect(() => {
+    if (!activeMission) return;
+    if (
+      prevSecondsRef.current === 1 &&
+      secondsLeft === 0 &&
+      !bellPlayedRef.current
+    ) {
+      bellPlayedRef.current = true;
+      soundEngine.playMissionBell();
+    }
+    prevSecondsRef.current = secondsLeft;
+  }, [activeMission, secondsLeft]);
 
   if (!activeMission) return null;
 
@@ -62,7 +75,7 @@ export function MissionFocusOverlay() {
         <div className="flex items-center justify-between max-w-2xl w-full mx-auto">
           <div className="flex items-center gap-2">
             <span
-              className="w-2.5 h-2.5 rounded-full animate-pulse"
+              className="w-2.5 h-2.5 rounded-full motion-safe:animate-pulse"
               style={{ backgroundColor: attrMeta.colorVar }}
             />
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -127,39 +140,31 @@ export function MissionFocusOverlay() {
           </p>
         </div>
 
-        {/* Bottom Tactile Controls */}
-        <div className="max-w-xl w-full mx-auto flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => setPaused((p) => !p)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--border-strong)] cursor-pointer"
-          >
-            {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-            {paused ? "Reanudar" : "Pausar"}
-          </button>
+        {/* Bottom Tactile Controls + Calm External Music Footer Note */}
+        <div className="max-w-xl w-full mx-auto">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPaused((p) => !p)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-5 py-3 text-sm font-semibold text-[var(--text-primary)] hover:border-[var(--border-strong)] cursor-pointer"
+            >
+              {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              {paused ? "Reanudar" : "Pausar"}
+            </button>
 
-          <button
-            type="button"
-            onClick={toggleAmbient}
-            className={`inline-flex items-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold cursor-pointer transition-colors ${
-              ambientOn
-                ? "border-[var(--accent-focus)] bg-[var(--accent-focus-soft)] text-[var(--accent-focus)]"
-                : "border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-secondary)]"
-            }`}
-          >
-            <Headphones className="w-4 h-4" />
-            {ambientOn ? "Audio Foco Activo" : "Sonido Ambiental"}
-          </button>
-
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.97 }}
-            onClick={finishMissionSession}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[var(--accent-sage)] text-white px-6 py-3 text-sm font-semibold cursor-pointer shadow-sm"
-          >
-            <Check className="w-4 h-4" />
-            Completar ahora
-          </motion.button>
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.97 }}
+              onClick={finishMissionSession}
+              className="inline-flex items-center gap-2 rounded-2xl bg-[var(--accent-sage)] text-white px-6 py-3 text-sm font-semibold cursor-pointer shadow-sm"
+            >
+              <Check className="w-4 h-4" />
+              Completar ahora
+            </motion.button>
+          </div>
+          <p className="mt-3 text-center text-xs text-[var(--text-tertiary)]">
+            Audio continuo libre · Usa tu música de Spotify o YouTube sin cortes
+          </p>
         </div>
       </motion.div>
     </AnimatePresence>

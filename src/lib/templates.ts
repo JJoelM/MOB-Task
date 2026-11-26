@@ -229,6 +229,13 @@ export const ACHIEVEMENTS_CATALOG: Achievement[] = [
     tier: "silver",
     category: "body",
   },
+  {
+    id: "ach-mob-100",
+    title: "Descarga al 100%",
+    description: "Acumulaste esfuerzo constante hasta detonar el 100% de tu medidor MOB.",
+    tier: "gold",
+    category: "momentum",
+  },
 ];
 
 export function getLocalDateKey(offsetDays = 0): string {
